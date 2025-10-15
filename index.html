@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Word Builder Fun Game</title>
+<title>Word Builder Game</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   body {
-    background-color: #ffb6c1; /* light pink background */
+    background-color: #ffc0cb; /* pink background */
     font-family: 'Comfortaa', cursive;
   }
   .success-pulse {
@@ -23,7 +23,7 @@
 <body class="flex flex-col items-center justify-center min-h-screen p-6">
 
   <div class="bg-white rounded-2xl p-6 shadow-lg w-full max-w-md text-center">
-    <h1 class="text-3xl font-bold mb-4 text-pink-700">🌟 Word Builder 🌟</h1>
+    <h1 class="text-3xl font-bold mb-4 text-pink-700">Word Builder</h1>
 
     <div id="imageContainer" class="mb-4"></div>
     <div id="dropZone" class="flex justify-center gap-2 mb-4"></div>
@@ -37,12 +37,10 @@
   </div>
 
 <script>
-// --- Word Data ---
 const wordData = [
-  { image: "https://cdn-icons-png.flaticon.com/512/414/414825.png", word: "CLOUD", tiles: ["C","L","O","U","D"] },
-  { image: "https://cdn-icons-png.flaticon.com/512/992/992001.png", word: "RING", tiles: ["R","I","N","G"] },
-  { image: "https://cdn-icons-png.flaticon.com/512/616/6164082.png", word: "BELL", tiles: ["B","E","L","L"] },
-  { image: "https://cdn-icons-png.flaticon.com/512/706/706164.png", word: "CHIP", tiles: ["C","H","I","P"] }
+  { image: "https://cdn-icons-png.flaticon.com/512/616/616408.png", word: "CAT", tiles: ["C","A","T"] },
+  { image: "https://cdn-icons-png.flaticon.com/512/616/6164081.png", word: "DOG", tiles: ["D","O","G"] },
+  { image: "https://cdn-icons-png.flaticon.com/512/616/616554.png", word: "SUN", tiles: ["S","U","N"] }
 ];
 
 let currentWordIndex = 0;
@@ -54,10 +52,7 @@ let score = 0;
 // --- Rendering Functions ---
 function renderImage(wordObj) {
   const imageContainer = document.getElementById("imageContainer");
-  imageContainer.innerHTML = `
-    <div class="p-2 bg-pink-100 rounded-xl shadow-inner w-40 mx-auto">
-      <img src="${wordObj.image}" alt="${wordObj.word}" class="w-32 mx-auto">
-    </div>`;
+  imageContainer.innerHTML = `<img src="${wordObj.image}" alt="${wordObj.word}" class="w-32 mx-auto">`;
 }
 
 function renderDropSlots(wordObj) {
@@ -81,13 +76,13 @@ function renderDraggableTiles(wordObj) {
     const tile = document.createElement("div");
     tile.textContent = letter;
     tile.draggable = true;
-    tile.className = "w-12 h-12 flex items-center justify-center bg-pink-200 border-2 border-pink-400 rounded-lg font-bold text-xl cursor-move shadow-sm";
+    tile.className = "w-12 h-12 flex items-center justify-center bg-pink-200 border-2 border-pink-400 rounded-lg font-bold text-xl cursor-move";
     tile.addEventListener("dragstart", handleDragStart);
     tilesContainer.appendChild(tile);
   });
 }
 
-// --- Drag and Drop ---
+// --- Drag Functions ---
 let draggedTile = null;
 function handleDragStart(e) {
   draggedTile = e.target;
@@ -120,7 +115,7 @@ function checkWord() {
       feedback.textContent = `Try again! You have ${attemptsLeft} attempt(s) left.`;
       feedback.className = "text-red-600 font-bold mt-4";
     } else {
-      feedback.textContent = `Out of attempts! The word was ${currentWord.word}. 😢`;
+      feedback.textContent = `Out of attempts! The correct word was ${currentWord.word}.`;
       feedback.className = "text-red-600 font-bold mt-4";
       nextButton.disabled = false;
       checkButton.disabled = true;
@@ -155,11 +150,10 @@ function endGame() {
   const container = document.querySelector(".bg-white");
   const percent = (score / wordData.length) * 100;
   const message = percent >= 50 ? "🎉 Well done! 😄" : "Try again! 😢";
-  const colour = percent >= 50 ? "text-green-700" : "text-red-600";
   container.innerHTML = `
-    <h2 class="text-2xl font-bold mb-4 text-pink-700">🎯 Game Over 🎯</h2>
+    <h2 class="text-2xl font-bold mb-4 text-pink-700">Game Over</h2>
     <p class="text-xl mb-2">Your final score: ${score} / ${wordData.length}</p>
-    <p class="text-2xl font-semibold ${colour}">${message}</p>
+    <p class="text-2xl font-semibold">${message}</p>
   `;
 }
 
@@ -167,7 +161,7 @@ function endGame() {
 document.getElementById("checkButton").addEventListener("click", checkWord);
 document.getElementById("nextButton").addEventListener("click", loadNextWord);
 
-// --- Initialize ---
+// --- Initialize Game ---
 window.onload = function() {
   renderImage(currentWord);
   renderDropSlots(currentWord);
