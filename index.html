@@ -418,7 +418,6 @@
         let roundResults = []; // Stores { word: "...", status: "correct"/"failed", attempts: 1, finalRack: [] }
 
         // --- DOM Elements ---
-        // These are guaranteed to be defined when DOMContentLoaded fires
         const imageContainer = document.getElementById('word-image-container');
         const slotsContainer = document.getElementById('drop-slots-container');
         const tilesContainer = document.getElementById('tiles-container');
@@ -666,12 +665,6 @@
         // --- Game Logic ---
         
         function setupGame() {
-            // Check if all necessary elements are loaded
-            if (!imageContainer || !slotsContainer || !tilesContainer) {
-                console.error("Game setup failed: Required DOM elements are missing.");
-                return;
-            }
-
             // Reset main game state
             gameWords = shuffleArray([...wordData]);
             currentWordIndex = 0;
@@ -913,7 +906,7 @@
         });
 
         // --- Initialization ---
-        document.addEventListener('DOMContentLoaded', function() {
+        window.onload = function() {
             // Set initial attempts display before setup
             document.getElementById('attempts-left-display').textContent = MAX_ATTEMPTS;
             
@@ -921,7 +914,7 @@
             // Attach the drop listener to the tiles container only once for stability.
             tilesContainer.addEventListener('drop', handleDrop);
             setupGame();
-        });
+        };
 
     </script>
 </body>
