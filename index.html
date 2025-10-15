@@ -61,7 +61,7 @@
                 type="text"
                 id="input-field"
                 class="w-full p-4 text-xl border-4 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none transition duration-150 shadow-md"
-                placeholder="Start typing the word above..."
+                placeholder="Start typing the word above... (Press Space to advance)"
                 autocomplete="off"
             />
 
@@ -72,7 +72,11 @@
 
         <!-- Results Interface (Hidden initially) -->
         <div id="results-interface" class="hidden text-center">
-            <h2 class="text-3xl font-extrabold text-indigo-600 mb-4">Test Complete!</h2>
+            <!-- Dynamic final message based on score -->
+            <h2 id="final-message" class="text-3xl font-extrabold mb-4">
+                Test Complete!
+            </h2>
+            
             <div class="bg-indigo-50 p-6 rounded-lg mb-8 shadow-md">
                 <p class="text-lg text-gray-700">You completed <span id="total-words"></span> words.</p>
                 <p class="text-5xl font-extrabold text-gray-800 mt-2">
@@ -99,7 +103,8 @@
             "the", "quick", "brown", "fox", "jumps", "over", "the", "lazy", "dog", "swiftly",
             "keyboard", "programming", "javascript", "developer", "interface", "monitor", "application",
             "algorithm", "function", "variable", "boolean", "integer", "string", "context", "promise",
-            "asynchronous", "architecture", "component", "utility", "tailwind", "responsive", "design"
+            "asynchronous", "architecture", "component", "utility", "tailwind", "responsive", "design",
+            "canvas", "element", "style", "script", "terminal", "project", "source", "module"
         ];
         
         // DOM Elements
@@ -120,7 +125,7 @@
         // --- Core Functions ---
 
         function setupTest() {
-            // Shuffle and slice a set of words for the test (e.g., 20 words)
+            // Shuffle and slice a set of words for the test (25 words)
             shuffledWords = [...WORDS].sort(() => 0.5 - Math.random()).slice(0, 25);
             currentWordIndex = 0;
             results = [];
@@ -194,17 +199,21 @@
             if (currentWordElement) {
                 const rect = currentWordElement.getBoundingClientRect();
                 const containerRect = textDisplay.getBoundingClientRect();
+                
+                // Check if the current word is fully visible in the text display area
                 if (rect.left < containerRect.left || rect.right > containerRect.right) {
+                    // If not, scroll it into view
                     currentWordElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
                 }
             }
         }
 
         function handleSpacePress() {
-            if (currentWordIndex >= shuffledWords.length) return; // Should not happen but safety check
+            if (currentWordIndex >= shuffledWords.length) return; // Safety check
             
             const targetWord = shuffledWords[currentWordIndex];
-            const typedText = inputField.value.trim();
+            // Use trim() to handle any potential leading/trailing whitespace
+            const typedText = inputField.value.trim(); 
             
             // 1. Determine correctness
             const isMatch = targetWord === typedText;
@@ -237,6 +246,28 @@
             // Calculate and display main score
             const correctCount = results.filter(r => r.correct).length;
             const totalWords = shuffledWords.length;
+            const correctPercentage = (correctCount / totalWords) * 100;
+            
+            const finalMessageElement = document.getElementById('final-message');
+            
+            let messageText;
+            let emoji;
+            let colorClass; // Tailwind class for coloring the text
+            
+            // Check if percentage is 70% or more
+            if (correctPercentage >= 70) {
+                messageText = 'Well done!';
+                emoji = '🥳';
+                colorClass = 'text-green-600';
+            } else {
+                messageText = 'Try again!';
+                emoji = '😔';
+                colorClass = 'text-red-600';
+            }
+            
+            // Update the main heading with the dynamic message and score
+            finalMessageElement.className = `text-3xl font-extrabold mb-4 ${colorClass}`;
+            finalMessageElement.innerHTML = `${messageText} ${emoji} (${correctCount} / ${totalWords} correct)`;
 
             correctCountDisplay.textContent = correctCount;
             totalCountDisplay.textContent = totalWords;
