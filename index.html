@@ -129,11 +129,11 @@
         </main>
 
         <!-- Draggable Tiles Area -->
-        <section class="w-full text-center p-4 bg-yellow-100 rounded-xl border-4 border-yellow-300 shadow-md mt-6">
+        <section class="w-full text-center p-4 bg-yellow-100 rounded-xl border-4 border-yellow-400 shadow-md mt-6">
             <h2 class="text-2xl font-bold text-yellow-800 mb-4">
                 Available Sounds
             </h2>
-            <div id="tiles-container" class="flex flex-wrap justify-center gap-3 md:gap-4">
+            <div id="tiles-container" class="flex flex-wrap justify-center gap-3 md:gap-4 min-h-[100px]">
                 <!-- Draggable tiles will be rendered here -->
             </div>
         </section>
@@ -142,7 +142,6 @@
 
     <script>
         // --- Tone.js Audio Setup ---
-        // A simple synth for cheerful sound
         let synth; 
 
         function initializeAudio() {
@@ -165,7 +164,7 @@
         }
 
         function playIncorrectSound() {
-            // Play a dissonant, short sound (D3, C#3)
+            // Play a dissonant, short sound (D3, C#3) - THIS IS THE INCORRECT WORD SOUND
             const now = Tone.now();
             synth.triggerAttackRelease(["D3", "C#3"], "16n", now);
         }
@@ -182,7 +181,6 @@
             { word: "SUN", sounds: ["s", "u", "n"], color: "f97316", fontColor: "ffffff", bgColor: "yellow-50" },
             { word: "BELL", sounds: ["b", "e", "ll"], color: "be185d", fontColor: "ffffff", bgColor: "rose-50" },
             { word: "TENT", sounds: ["t", "e", "n", "t"], color: "14b8a6", fontColor: "ffffff", bgColor: "teal-50" },
-            // --- NEW WORDS ADDED BELOW ---
             { word: "RING", sounds: ["r", "i", "ng"], color: "a855f7", fontColor: "ffffff", bgColor: "violet-50" },
             { word: "CHIP", sounds: ["ch", "i", "p"], color: "065f46", fontColor: "ffffff", bgColor: "teal-50" },
             { word: "STAR", sounds: ["st", "ar"], color: "facc15", fontColor: "000000", bgColor: "yellow-50" },
@@ -298,7 +296,6 @@
                     <!-- Door Flap -->
                     <polygon points="50,85 35,50 65,50" fill="#ffffff" stroke="#059669" stroke-width="2"/>
                 </svg>`,
-            // --- NEW SVGS ADDED BELOW ---
             "RING": `
                 <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="50" cy="50" r="30" fill="none" stroke="#a855f7" stroke-width="8"/>
@@ -519,27 +516,18 @@
             // Shuffle the tiles before rendering
             availableTiles = shuffleArray(availableTiles);
             
+            // --- UNIFIED COLOR SCHEME ---
+            const bgColor = 'bg-blue-100';
+            const borderColor = 'border-blue-400';
+            const textColor = 'text-blue-800';
+
             availableTiles.forEach(tileData => {
                 const tile = document.createElement('div');
                 tile.id = tileData.id;
                 tile.dataset.value = tileData.value;
                 tile.draggable = true;
                 
-                let bgColor, borderColor, textColor;
-                
-                if (tileData.isDistractor) {
-                    // Distractor tiles: Light yellow/orange
-                    bgColor = 'bg-yellow-200';
-                    borderColor = 'border-yellow-400';
-                    textColor = 'text-yellow-800';
-                } else {
-                    // Required tiles (Emerald Green)
-                    bgColor = 'bg-emerald-300';
-                    borderColor = 'border-emerald-500';
-                    textColor = 'text-gray-800';
-                }
-
-                // Added border-2 for better visual separation
+                // Apply the unified styling to all tiles
                 tile.className = `draggable-tile w-20 h-20 md:w-24 md:h-24 ${bgColor} ${borderColor} ${textColor} text-3xl font-bold flex justify-center items-center rounded-xl shadow-md p-1 transition duration-200 hover:scale-105 active:scale-95 border-2`;
 
                 tile.textContent = tileData.value;
