@@ -429,7 +429,11 @@
                 // Identical class list for all tiles (required and distractors)
                 tile.className = `draggable-tile w-20 h-20 md:w-24 md:h-24 ${bgColor} ${borderColor} ${textColor} text-3xl font-bold flex justify-center items-center rounded-xl shadow-md p-1 transition duration-200 hover:scale-105 active:scale-95 border-2`;
 
-                tile.textContent = tileData.value.toUpperCase(); 
+                // **********************************************
+                // FIX: Set text content to its existing lowercase value
+                tile.textContent = tileData.value; 
+                // **********************************************
+                
                 tile.addEventListener('dragstart', handleDragStart);
                 tilesContainer.appendChild(tile);
             });
