@@ -129,10 +129,8 @@
         <!-- Picture & Slots Area (Game Interface) -->
         <main id="main-game-area" class="w-full flex flex-col items-center space-y-6 mb-8">
             
-            <!-- Picture Area -->
+            <!-- Picture Area - Initial content removed. JS will populate it immediately. -->
             <div id="word-image-container" class="w-40 h-40 md:w-48 md:h-48 rounded-full shadow-xl border-4 border-indigo-300 overflow-hidden relative mb-4 flex items-center justify-center bg-gray-100">
-                <!-- Image will be loaded here -->
-                <p class="text-center text-gray-500">Loading...</p>
             </div>
             
             <!-- Drop Zone Slots -->
@@ -213,6 +211,7 @@
                 Tone.start().then(() => {
                     isAudioInitialized = true;
                 }).catch(err => {
+                    // Log error but continue execution of the game logic
                     console.error("Failed to start audio context:", err);
                 });
             }
@@ -674,6 +673,15 @@
             tilesSection.classList.remove('hidden');
             resultsInterface.classList.add('hidden');
             
+            // --- CRITICAL FIX: Ensure image box is updated immediately with the word, even if image fails ---
+            currentWordData = gameWords[currentWordIndex];
+            imageContainer.innerHTML = `
+                <div class="text-4xl text-gray-800 font-bold p-4 text-center">
+                    ${currentWordData.word}
+                    <p class="text-sm text-gray-500 font-normal mt-1">Ready to play!</p>
+                </div>`;
+            // --- END CRITICAL FIX ---
+
             loadWord();
         }
 
@@ -897,9 +905,9 @@
         // --- Initialization ---
         window.onload = function() {
             initializeAudio(); 
-            setupGame();
             // Attach the drop listener to the tiles container only once for stability.
             tilesContainer.addEventListener('drop', handleDrop);
+            setupGame();
         };
 
     </script>
