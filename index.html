@@ -121,7 +121,7 @@
             </div>
             <div class="text-center">
                 <p class="text-sm text-gray-600">Tries Left</p>
-                <span id="attempts-left-display" class="text-xl font-bold text-green-700">2</span>
+                <span id="attempts-left-display" class="text-xl font-bold text-red-600">3</span>
             </div>
         </div>
 
@@ -131,6 +131,7 @@
             
             <!-- Picture Area -->
             <div id="word-image-container" class="w-40 h-40 md:w-48 md:h-48 rounded-full shadow-xl border-4 border-indigo-300 overflow-hidden relative mb-4 flex items-center justify-center bg-gray-100">
+                <!-- Image will be loaded here -->
             </div>
             
             <!-- Drop Zone Slots -->
@@ -164,7 +165,6 @@
 
         <!-- Final Results Screen (Hidden) -->
         <div id="results-interface" class="hidden w-full text-center">
-             <!-- Final message updated with score and emoji logic -->
              <h2 id="final-message" class="text-4xl font-extrabold mb-4 text-gray-800">Game Over!</h2>
             
             <div class="bg-green-50 p-6 rounded-lg mb-8 shadow-lg">
@@ -211,9 +211,9 @@
                 // Tone.start() attempts to resume or start the context
                 Tone.start().then(() => {
                     isAudioInitialized = true;
+                    // console.log("Audio context resumed/started.");
                 }).catch(err => {
-                    // Log error but continue execution of the game logic
-                    console.error("Failed to start audio context:", err);
+                    // console.error("Failed to start audio context:", err);
                 });
             }
         }
@@ -343,7 +343,7 @@
                     <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(180, 50, 50)"/>
                     <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(225, 50, 50)"/>
                     <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(270, 50, 50)"/>
-                    <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(315, 50, 50)"/>
+                    <rect x="45" y="5" width="1=" height="15" fill="#f59e0b" transform="rotate(315, 50, 50)"/>
                 </svg>`,
             "BELL": `
                 <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
@@ -411,9 +411,7 @@
         
         let totalCorrect = 0;
         let totalIncorrect = 0;
-        // MAX_ATTEMPTS is now 2
-        const MAX_ATTEMPTS = 2; 
-        let attemptsLeft = MAX_ATTEMPTS; 
+        let attemptsLeft = 3;
         
         let roundResults = []; // Stores { word: "...", status: "correct"/"failed", attempts: 1, finalRack: [] }
 
@@ -469,16 +467,15 @@
             currentRoundText.textContent = `Word ${currentWordIndex + 1} / ${gameWords.length}`;
             attemptsLeftDisplay.textContent = attemptsLeft;
             
-            // Visual feedback for attempts left (0, 1, or 2)
-            if (attemptsLeft === 0) {
-                attemptsLeftDisplay.classList.add('text-red-600');
-                attemptsLeftDisplay.classList.remove('text-yellow-600', 'text-green-700');
-            } else if (attemptsLeft === 1) {
+            if (attemptsLeft === 1) {
                 attemptsLeftDisplay.classList.add('text-yellow-600');
-                attemptsLeftDisplay.classList.remove('text-red-600', 'text-green-700');
+                attemptsLeftDisplay.classList.remove('text-red-600');
+            } else if (attemptsLeft === 0) {
+                attemptsLeftDisplay.classList.add('text-red-600');
+                attemptsLeftDisplay.classList.remove('text-yellow-600');
             } else {
-                attemptsLeftDisplay.classList.add('text-green-700');
                 attemptsLeftDisplay.classList.remove('text-yellow-600', 'text-red-600');
+                attemptsLeftDisplay.classList.add('text-red-600');
             }
         }
 
@@ -582,9 +579,9 @@
         // --- Render Functions (Simplified for clarity) ---
 
         function renderImage(data) {
-            // Reset classes, removing any previous success-pulse or specific bg colors
-            imageContainer.className = 'w-40 h-40 md:w-48 md:h-48 rounded-full shadow-xl border-4 border-indigo-300 overflow-hidden relative mb-4 flex items-center justify-center bg-gray-100';
             imageContainer.innerHTML = '';
+            // Reset classes, removing any previous success-pulse or specific bg colors
+            imageContainer.className = 'w-40 h-40 md:w-48 md:h-48 rounded-full shadow-xl border-4 border-indigo-300 overflow-hidden relative mb-4 flex items-center justify-center';
             
             const svgContent = wordSVGs[data.word];
 
@@ -594,12 +591,8 @@
                 const bgClass = `bg-${data.bgColor.replace('-50', '')}-100`; // Use a slightly lighter version for the circle fill
                 imageContainer.classList.add(bgClass); 
             } else {
-                // Fallback to display the word itself if no SVG is available (crucial fallback)
-                imageContainer.innerHTML = `
-                    <div class="text-4xl text-gray-800 font-bold p-4 text-center">
-                        ${data.word}
-                        <p class="text-sm text-gray-500 font-normal mt-1">Image Placeholder</p>
-                    </div>`;
+                const url = `https://placehold.co/192x192/94a3b8/000000?text=${data.word}`;
+                imageContainer.innerHTML = `<img src="${url}" alt="Picture of a ${data.word}" class="w-full h-full object-cover p-2" onerror="this.onerror=null; this.src='${url}';" />`;
                 imageContainer.classList.add('bg-gray-100');
             }
         }
@@ -659,7 +652,8 @@
                 tile.addEventListener('dragstart', handleDragStart);
                 tilesContainer.appendChild(tile);
             });
-            // The main drop listener for returning tiles is still attached globally in window.onload
+            // Removed the repeated tilesContainer.addEventListener('drop', handleDrop); 
+            // It is now attached once in window.onload for stability.
         }
         
         // --- Game Logic ---
@@ -677,9 +671,6 @@
             tilesSection.classList.remove('hidden');
             resultsInterface.classList.add('hidden');
             
-            // Load the first word and initialize the display
-            currentWordData = gameWords[currentWordIndex];
-
             loadWord();
         }
 
@@ -691,8 +682,8 @@
 
             currentWordData = gameWords[currentWordIndex];
             
-            // Reset round state: Set attempts to the new MAX_ATTEMPTS (2)
-            attemptsLeft = MAX_ATTEMPTS; 
+            // Reset round state
+            attemptsLeft = 3;
             resetSlotStyles();
             
             // Reset UI
@@ -742,7 +733,7 @@
                 roundResults.push({
                     word: currentWordData.word,
                     status: "correct",
-                    attempts: MAX_ATTEMPTS - attemptsLeft, // Attempts used (e.g., 2 - 1 = 1st try)
+                    attempts: 3 - attemptsLeft + 1, // Calculate attempts used
                     finalRack: currentAttempt
                 });
 
@@ -777,7 +768,7 @@
                     roundResults.push({
                         word: currentWordData.word,
                         status: "failed",
-                        attempts: MAX_ATTEMPTS,
+                        attempts: 3,
                         finalRack: currentAttempt
                     });
 
@@ -786,11 +777,11 @@
                     nextButton.disabled = true;
                     setTimeout(loadNextWord, 3000); // Wait longer to show answer
                 } else {
-                    // --- MISTAKE, TRY AGAIN (1 try left) ---
+                    // --- MISTAKE, TRY AGAIN ---
                     playIncorrectSound();
                     
                     feedbackMessage.className = 'h-10 text-xl font-bold mt-4 text-red-600 feedback-incorrect';
-                    feedbackMessage.textContent = `Oops, try again! ${attemptsLeft} try remaining.`;
+                    feedbackMessage.textContent = `Oops, try again! ${attemptsLeft} tries remaining.`;
                 }
             }
         }
@@ -815,16 +806,16 @@
             
             // Define threshold (70% or more words correct)
             if (successRate >= 0.7) {
-                messageText = `Well Done! You scored ${totalCorrect} / ${totalWords}!`;
-                emoji = '🎉'; // Success emoji
+                messageText = 'Well done! You nailed the challenge! 🥳';
+                emoji = '🥳';
                 colorClass = 'text-green-600';
             } else {
-                messageText = `Try again! You scored ${totalCorrect} / ${totalWords}.`;
-                emoji = '😥'; // Sad/Try Again emoji
+                messageText = 'Keep going! Let’s practice those sounds again. 😔';
+                emoji = '😔';
                 colorClass = 'text-red-600';
             }
             
-            // Update the final summary with score and emoji
+            // Update the final summary
             finalMessage.className = `text-4xl font-extrabold mb-4 ${colorClass}`;
             finalMessage.innerHTML = `${messageText} ${emoji}`;
             
@@ -845,7 +836,7 @@
                 wordLine.innerHTML = `
                     <span class="font-bold text-xl">${item.word}</span>
                     <span class="text-sm ${isCorrect ? 'text-green-600' : 'text-red-600'}">
-                        ${isCorrect ? 'Correct!' : item.status === 'skipped' ? 'Skipped' : 'Failed.'} (Tries: ${item.attempts})
+                        ${isCorrect ? 'Correct!' : 'Failed.'} (Tries: ${item.attempts})
                     </span>
                 `;
                 resultDiv.appendChild(wordLine);
@@ -856,12 +847,7 @@
                 
                 const attemptLabel = document.createElement('span');
                 attemptLabel.className = `word-result-label px-3 py-1 rounded-full ${isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
-                
-                let rackDisplay = item.finalRack.length > 0 ? item.finalRack.join(' ').toUpperCase() : 'N/A';
-                if (item.status === 'skipped') {
-                    rackDisplay = 'Skipped';
-                }
-                attemptLabel.textContent = rackDisplay;
+                attemptLabel.textContent = item.finalRack.length > 0 ? item.finalRack.join(' ').toUpperCase() : 'N/A';
                 
                 resultDiv.appendChild(attemptLabel);
                 resultsBreakdown.appendChild(resultDiv);
@@ -907,13 +893,10 @@
 
         // --- Initialization ---
         window.onload = function() {
-            // Set initial attempts display before setup
-            document.getElementById('attempts-left-display').textContent = MAX_ATTEMPTS;
-            
             initializeAudio(); 
+            setupGame();
             // Attach the drop listener to the tiles container only once for stability.
             tilesContainer.addEventListener('drop', handleDrop);
-            setupGame();
         };
 
     </script>
