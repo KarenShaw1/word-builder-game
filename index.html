@@ -113,7 +113,7 @@
     </div>
 
     <script>
-        // --- Game Data (Sounds are now lowercase) ---
+        // --- Game Data (Sounds are all lowercase) ---
         const wordData = [
             { word: "HAT", sounds: ["h", "a", "t"], color: "f97316", fontColor: "ffffff", bgColor: "orange-50" }, 
             { word: "FROG", sounds: ["f", "r", "o", "g"], color: "22c55e", fontColor: "ffffff", bgColor: "lime-50" }, 
@@ -368,7 +368,7 @@
                 // Add specific Tailwind class for background color
                 imageContainer.classList.add(`bg-${data.bgColor}`); 
             } else {
-                // Fallback (Should not happen now that all are defined)
+                // Fallback 
                 const url = `https://placehold.co/192x192/94a3b8/000000?text=${data.word}`;
                 imageContainer.innerHTML = `
                     <img src="${url}" alt="Picture of a ${data.word}" class="w-full h-full object-cover p-2 transition duration-500 ease-in-out" 
@@ -395,50 +395,61 @@
         function renderDraggableTiles(data) {
             tilesContainer.innerHTML = ''; // Clear previous tiles
             
-            // 1. Collect all necessary sounds from all words (now lowercase)
-            const allRequiredSounds = Array.from(new Set(wordData.flatMap(d => d.sounds)));
-            
-            // 2. Generate tiles for all required sounds
-            let tiles = allRequiredSounds.map((sound, index) => ({
-                id: `tile-${sound}-${index}-${Math.random().toString(36).substring(2, 9)}`,
+            const requiredSounds = Array.from(new Set(data.sounds));
+            let availableTiles = requiredSounds.map(sound => ({
+                id: `tile-${sound}-${Math.random().toString(36).substring(2, 9)}`,
                 value: sound,
-                color: data.color 
+                isDistractor: false
             }));
 
-            // 3. Add some "distractor" tiles (now lowercase)
-            const commonDistractors = ["q", "x", "z"].filter(s => !allRequiredSounds.includes(s));
+            // Identify a pool of common distractors (not typically required for these short words)
+            const commonDistractors = ["q", "x", "z", "j", "v"]; 
             
-            commonDistractors.forEach((sound, index) => {
-                 tiles.push({
+            // Filter distractors that are NOT in the required sounds
+            let validDistractors = commonDistractors.filter(s => !requiredSounds.includes(s));
+            
+            // Choose the first 2 available valid distractors (or fewer if less than 2)
+            const chosenDistractors = validDistractors.slice(0, 2);
+
+            chosenDistractors.forEach((sound, index) => {
+                 availableTiles.push({
                     id: `distractor-tile-${sound}-${index}`,
                     value: sound,
-                    color: "f87171" // Red distractor color
+                    isDistractor: true
                  });
             });
 
-            // 4. Shuffle the tiles before rendering
-            tiles = shuffleArray(tiles);
+            // Shuffle the tiles before rendering
+            availableTiles = shuffleArray(availableTiles);
             
-            tiles.forEach(tileData => {
+            availableTiles.forEach(tileData => {
                 const tile = document.createElement('div');
                 tile.id = tileData.id;
                 tile.dataset.value = tileData.value;
                 tile.draggable = true;
                 
-                // Adjust tile color based on whether it's a distractor
-                const isDistractor = tileData.color === "f87171";
-                // Use consistent colors for non-distractor tiles to simplify the pool visually
-                const bgColor = isDistractor ? 'bg-red-200' : 'bg-green-200'; 
-                const borderColor = isDistractor ? 'border-red-400' : 'border-green-400';
-                const textColor = isDistractor ? 'text-red-700' : 'text-green-700';
+                let bgColor, borderColor, textColor;
+                
+                if (tileData.isDistractor) {
+                    // Distractor tiles: Light yellow/orange
+                    bgColor = 'bg-yellow-200';
+                    borderColor = 'border-yellow-400';
+                    textColor = 'text-yellow-800';
+                } else {
+                    // Required tiles (Emerald Green as requested)
+                    bgColor = 'bg-emerald-300';
+                    borderColor = 'border-emerald-500';
+                    textColor = 'text-gray-800';
+                }
 
-                tile.className = `draggable-tile w-20 h-20 md:w-24 md:h-24 ${bgColor} ${borderColor} ${textColor} text-3xl font-bold flex justify-center items-center rounded-xl shadow-md p-1 transition duration-200 hover:scale-105 active:scale-95`;
+                // Added border-2 for better visual separation
+                tile.className = `draggable-tile w-20 h-20 md:w-24 md:h-24 ${bgColor} ${borderColor} ${textColor} text-3xl font-bold flex justify-center items-center rounded-xl shadow-md p-1 transition duration-200 hover:scale-105 active:scale-95 border-2`;
 
                 tile.textContent = tileData.value;
                 tile.addEventListener('dragstart', handleDragStart);
-                tilesContainer.addEventListener('drop', handleDrop); // Allow dropping tiles back onto the container
                 tilesContainer.appendChild(tile);
             });
+            tilesContainer.addEventListener('drop', handleDrop);
         }
         
         // --- Game Logic ---
@@ -476,7 +487,7 @@
                 
                 // Visually lock tiles in place with success style
                 Array.from(dropSlots).forEach(slot => {
-                    slot.style.borderColor = '#10B981'; // Green-500
+                    slot.style.borderColor = '#10B981'; // Emerald Green
                     slot.style.backgroundColor = '#D1FAE5'; // Green-100
                     slot.classList.remove('drop-zone');
                 });
@@ -531,3 +542,4 @@
 
     </script>
 </body>
+</html>
