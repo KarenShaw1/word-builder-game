@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NZ Year 2 Phonics Game</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Import Comfortaa Font and apply it globally */
+        @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap');
+        body, * {
+            font-family: 'Comfortaa', cursive;
+        }
+        
+        /* Custom Styles for Dragging Elements */
+        .draggable-tile {
+            cursor: grab;
+            transition: transform 0.1s ease-in-out, opacity 0.3s;
+        }
+        .draggable-tile:active {
+            cursor: grabbing;
+        }
+
+        /* Styling for the drop zones */
+        .drop-zone {
+            transition: background-color 0.2s;
+            border: 2px dashed #90a4ae;
+        }
+        .drop-zone.hover {
+            background-color: #ffe0b2; /* Light orange highlight */
+        }
+
+        /* Success/Failure States */
+        .feedback-correct {
+            animation: bounce-in 0.5s;
+        }
+        .feedback-incorrect {
+            animation: shake 0.5s;
+        }
+        
+        @keyframes bounce-in {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        
+        /* Ensure the layout is responsive and centered */
+        .game-container {
+            max-width: 90%;
+            min-height: 80vh;
+        }
+    </style>
+</head>
+<body class="bg-indigo-50 min-h-screen flex justify-center items-center p-4">
+
+    <!-- Game Container -->
+    <div id="game-container" class="game-container bg-white shadow-2xl rounded-2xl p-6 md:p-10 w-full max-w-xl flex flex-col items-center">
+
+        <!-- Header -->
+        <header class="text-center mb-8 w-full">
+            <h1 class="text-4xl font-extrabold text-indigo-700">
+                Word Builder Challenge!
+            </h1>
+            <p class="text-lg text-gray-500 mt-2">
+                Drag the sounds to spell the word (NZ Year 2 Phonics)
+            </p>
+        </header>
+
+        <!-- Picture & Slots Area -->
+        <main class="w-full flex flex-col items-center space-y-6 mb-8">
+            
+            <!-- Picture Area -->
+            <div id="word-image-container" class="w-40 h-40 md:w-48 md:h-48 rounded-full shadow-xl border-4 border-indigo-300 overflow-hidden relative mb-4 flex items-center justify-center bg-gray-100">
+                <!-- Image will be loaded here -->
+            </div>
+            
+            <!-- Drop Zone Slots -->
+            <div id="drop-slots-container" class="flex justify-center flex-wrap gap-2 md:gap-4 p-2 bg-gray-50 rounded-lg shadow-inner w-full">
+                <!-- Drop zones will be rendered here -->
+            </div>
+            
+            <!-- Feedback Message -->
+            <div id="feedback-message" class="h-10 text-xl font-bold mt-4"></div>
+
+            <!-- Buttons -->
+            <div id="button-area" class="flex space-x-4 mt-6">
+                <button id="check-button" onclick="checkWord()" disabled class="px-6 py-3 bg-green-500 text-white font-bold rounded-xl shadow-lg hover:bg-green-600 transition duration-150 disabled:opacity-50">
+                    Check
+                </button>
+                <button id="next-button" onclick="loadNextWord()" disabled class="px-6 py-3 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transition duration-150 disabled:opacity-50">
+                    Next Word
+                </button>
+            </div>
+        </main>
+
+        <!-- Draggable Tiles Area -->
+        <section class="w-full text-center p-4 bg-yellow-100 rounded-xl border-4 border-yellow-300 shadow-md mt-6">
+            <h2 class="text-2xl font-bold text-yellow-800 mb-4">
+                Available Sounds
+            </h2>
+            <div id="tiles-container" class="flex flex-wrap justify-center gap-3 md:gap-4">
+                <!-- Draggable tiles will be rendered here -->
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // --- Game Data ---
+        const wordData = [
+            { word: "HAT", sounds: ["H", "A", "T"], color: "f97316", fontColor: "ffffff", bgColor: "orange-50" }, 
+            { word: "FROG", sounds: ["F", "R", "O", "G"], color: "22c55e", fontColor: "ffffff", bgColor: "lime-50" }, 
+            { word: "FISH", sounds: ["F", "I", "SH"], color: "ec4899", fontColor: "ffffff", bgColor: "pink-50" }, 
+            { word: "DUCK", sounds: ["D", "U", "CK"], color: "fcd34d", fontColor: "000000", bgColor: "yellow-50" },
+            { word: "DOG", sounds: ["D", "O", "G"], color: "ef4444", fontColor: "ffffff", bgColor: "red-50" }, 
+            { word: "SHIP", sounds: ["SH", "I", "P"], color: "0ea5e9", fontColor: "ffffff", bgColor: "sky-50" },
+            { word: "LAMP", sounds: ["L", "A", "M", "P"], color: "6366f1", fontColor: "ffffff", bgColor: "indigo-50" }, 
+            { word: "SUN", sounds: ["S", "U", "N"], color: "f97316", fontColor: "ffffff", bgColor: "yellow-50" },
+            { word: "BELL", sounds: ["B", "E", "LL"], color: "be185d", fontColor: "ffffff", bgColor: "rose-50" },
+            { word: "TENT", sounds: ["T", "E", "N", "T"], color: "14b8a6", fontColor: "ffffff", bgColor: "teal-50" },
+        ];
+        
+        // --- SVG Definitions for all images ---
+        const wordSVGs = {
+            "HAT": `
+                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="15" y="70" width="70" height="15" rx="5" fill="#facc15"/>
+                    <path d="M 25 70 L 75 70 L 65 30 L 35 30 Z" fill="#b91c1c"/>
+                    <path d="M 35 30 Q 50 20 65 30" fill="none" stroke="#991b1b" stroke-width="3" stroke-linecap="round"/>
+                </svg>`,
+            "FROG": `
+                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Body (Lime Green) -->
+                    <circle cx="50" cy="50" r="40" fill="#84cc16"/>
+                    <!-- White Eyes on top of body -->
+                    <circle cx="35" cy="25" r="12" fill="white" stroke="#65a30d" stroke-width="2"/>
+                    <circle cx="65" cy="25" r="12" fill="white" stroke="#65a30d" stroke-width="2"/>
+                    <!-- Pupils (Black) -->
+                    <circle cx="35" cy="25" r="4" fill="black"/>
+                    <circle cx="65" cy="25" r="4" fill="black"/>
+                    <!-- Mouth (Smile) -->
+                    <path d="M 30 65 Q 50 80, 70 65" stroke="black" fill="none" stroke-width="3" stroke-linecap="round"/>
+                </svg>`,
+            "FISH": `
+                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M 20 50 C 30 20, 70 20, 80 50 C 70 80, 30 80, 20 50 Z" fill="#06b6d4"/>
+                    <path d="M 80 50 L 90 40 L 90 60 Z" fill="#06b6d4"/>
+                    <circle cx="35" cy="45" r="5" fill="white"/>
+                    <circle cx="37" cy="47" r="2" fill="black"/>
+                    <path d="M 45 40 Q 55 35 60 40" stroke="#0e7490" fill="none" stroke-width="2"/>
+                </svg>`,
+            "DUCK": `
+                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Body -->
+                    <circle cx="65" cy="65" r="25" fill="#fcd34d"/>
+                    <!-- Head -->
+                    <circle cx="40" cy="40" r="20" fill="#fcd34d"/>
+                    <!-- Beak -->
+                    <path d="M 50 45 L 60 55 L 50 65 Z" fill="#f59e0b"/>
+                    <!-- Eye -->
+                    <circle cx="35" cy="35" r="3" fill="black"/>
+                </svg>`,
+            "DOG": `
+                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Head -->
+                    <circle cx="50" cy="55" r="35" fill="#92400e"/>
+                    <!-- Left Ear -->
+                    <path d="M 30 20 L 20 40 L 35 45 Z" fill="#78350f"/>
+                    <!-- Right Ear -->
+                    <path d="M 70 20 L 80 40 L 65 45 Z" fill="#78350f"/>
+                    <!-- Eyes -->
+                    <circle cx="40" cy="50" r="3" fill="white"/>
+                    <circle cx="60" cy="50" r="3" fill="white"/>
+                    <!-- Nose -->
+                    <circle cx="50" cy="65" r="5" fill="black"/>
+                </svg>`,
+            "SHIP": `
+                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Hull -->
+                    <path d="M 10 75 L 90 75 L 80 85 L 20 85 Z" fill="#78350f"/>
+                    <!-- Mast -->
+                    <rect x="48" y="25" width="4" height="50" fill="#a1a1aa"/>
+                    <!-- Sail -->
+                    <polygon points="52,25 75,45 52,65" fill="#fef3c7" stroke="#eab308" stroke-width="1"/>
+                </svg>`,
+            "LAMP": `
+                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Base -->
+                    <rect x="40" y="80" width="20" height="5" fill="#78350f"/>
+                    <!-- Stand -->
+                    <rect x="48" y="30" width="4" height="50" fill="#a1a1aa"/>
+                    <!-- Shade -->
+                    <path d="M 30 30 L 70 30 L 60 15 L 40 15 Z" fill="#fcd34d"/>
+                    <!-- Light glow placeholder -->
+                    <circle cx="50" cy="55" r="10" fill="white" opacity="0.8"/>
+                </svg>`,
+            "SUN": `
+                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Center Circle -->
+                    <circle cx="50" cy="50" r="30" fill="#f59e0b"/>
+                    <!-- Rays -->
+                    <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(0, 50, 50)"/>
+                    <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(45, 50, 50)"/>
+                    <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(90, 50, 50)"/>
+                    <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(135, 50, 50)"/>
+                    <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(180, 50, 50)"/>
+                    <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(225, 50, 50)"/>
+                    <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(270, 50, 50)"/>
+                    <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(315, 50, 50)"/>
+                </svg>`,
+            "BELL": `
+                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Bell Body -->
+                    <path d="M 25 25 Q 20 40, 20 60 C 20 80, 80 80, 80 60 Q 80 40, 75 25 Z" fill="#fcd34d" stroke="#f59e0b" stroke-width="3"/>
+                    <!-- Loop -->
+                    <circle cx="50" cy="20" r="5" fill="#f59e0b"/>
+                    <!-- Clapper Rod -->
+                    <rect x="48" y="65" width="4" height="10" fill="#a1a1aa"/>
+                    <!-- Clapper Ball -->
+                    <circle cx="50" cy="75" r="5" fill="#a1a1aa"/>
+                </svg>`,
+            "TENT": `
+                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Tent Shape -->
+                    <polygon points="50,15 15,85 85,85" fill="#10b981"/>
+                    <!-- Center Pole/Line -->
+                    <path d="M 50 15 L 50 85" stroke="#059669" stroke-width="3"/>
+                    <!-- Door Flap -->
+                    <polygon points="50,85 35,50 65,50" fill="#ffffff" stroke="#059669" stroke-width="2"/>
+                </svg>`,
+        };
+
+
+        // --- Game State ---
+        let currentWordIndex = 0;
+        let currentWord = {};
+        let placedTiles = [];
+        let score = 0;
+
+        // --- DOM Elements ---
+        const imageContainer = document.getElementById('word-image-container');
+        const slotsContainer = document.getElementById('drop-slots-container');
+        const tilesContainer = document.getElementById('tiles-container');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const checkButton = document.getElementById('check-button');
+        const nextButton = document.getElementById('next-button');
+
+        // --- Utility Functions ---
+
+        // Simple Fisher-Yates shuffle
+        const shuffleArray = (array) => {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        };
+        
+        // --- Drag and Drop Handlers ---
+        
+        function handleDragStart(e) {
+            e.dataTransfer.setData('text/plain', e.target.dataset.value);
+            e.dataTransfer.effectAllowed = 'move';
+            // Store the ID of the tile being dragged so we can manage its visibility/parent
+            e.dataTransfer.setData('sourceId', e.target.id);
+            setTimeout(() => e.target.classList.add('opacity-40'), 0);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault(); // Necessary to allow dropping
+            e.dataTransfer.dropEffect = 'move';
+            if (e.target.classList.contains('drop-zone') && e.target.children.length === 0) {
+                e.target.classList.add('hover');
+            }
+        }
+        
+        function handleDragLeave(e) {
+            if (e.target.classList.contains('drop-zone')) {
+                e.target.classList.remove('hover');
+            }
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            
+            const soundValue = e.dataTransfer.getData('text/plain');
+            const sourceId = e.dataTransfer.getData('sourceId');
+            const draggedTile = document.getElementById(sourceId);
+            const dropTarget = e.target.closest('.drop-zone');
+
+            if (draggedTile && dropTarget && dropTarget.children.length === 0) {
+                // 1. Remove from old spot (if applicable)
+                if (draggedTile.parentNode.classList.contains('drop-zone')) {
+                     // Find the index of the slot it came from
+                    const oldIndex = Array.from(slotsContainer.children).indexOf(draggedTile.parentNode);
+                    placedTiles[oldIndex] = null;
+                }
+                
+                // 2. Place tile in new slot
+                dropTarget.appendChild(draggedTile);
+                draggedTile.classList.remove('opacity-40');
+                dropTarget.classList.remove('hover');
+
+                // 3. Update placedTiles array
+                const newIndex = Array.from(slotsContainer.children).indexOf(dropTarget);
+                placedTiles[newIndex] = soundValue;
+                
+                // 4. Update check button state
+                updateCheckButtonState();
+
+            } else if (draggedTile && dropTarget && dropTarget.classList.contains('drop-zone') && dropTarget.children.length > 0) {
+                 // Swap logic (advanced, but good for a game)
+                 const existingTile = dropTarget.firstElementChild;
+                 const oldParent = draggedTile.parentNode;
+                 
+                 // Perform the swap
+                 oldParent.appendChild(existingTile);
+                 dropTarget.appendChild(draggedTile);
+                 
+                 // Update placedTiles array after swap
+                 const newIndex = Array.from(slotsContainer.children).indexOf(dropTarget);
+                 const oldIndex = Array.from(slotsContainer.children).indexOf(oldParent);
+                 
+                 placedTiles[newIndex] = draggedTile.dataset.value;
+                 placedTiles[oldIndex] = existingTile.dataset.value;
+                 
+            } else if (draggedTile && e.target.id === 'tiles-container') {
+                // Dropping back into the source area
+                e.target.appendChild(draggedTile);
+                draggedTile.classList.remove('opacity-40');
+                
+                // If it came from a slot, clear that slot's value
+                const parentSlot = draggedTile.parentNode;
+                if (parentSlot && parentSlot.classList.contains('drop-zone')) {
+                    const slotIndex = Array.from(slotsContainer.children).indexOf(parentSlot);
+                    placedTiles[slotIndex] = null;
+                }
+                updateCheckButtonState();
+            }
+        }
+        
+        function updateCheckButtonState() {
+            // Check if all slots have a tile
+            const allSlotsFilled = placedTiles.every(tile => tile !== null);
+            checkButton.disabled = !allSlotsFilled;
+        }
+
+        // --- Render Functions ---
+
+        function renderImage(data) {
+            // Clear existing content and classes
+            imageContainer.innerHTML = '';
+            // Reset the class list to base styles
+            imageContainer.className = 'w-40 h-40 md:w-48 md:h-48 rounded-full shadow-xl border-4 border-indigo-300 overflow-hidden relative mb-4 flex items-center justify-center';
+            
+            const svgContent = wordSVGs[data.word];
+
+            if (svgContent) {
+                // Use the custom SVG content
+                imageContainer.innerHTML = svgContent;
+                // Add specific Tailwind class for background color
+                imageContainer.classList.add(`bg-${data.bgColor}`); 
+            } else {
+                // Fallback (Should not happen now that all are defined)
+                const url = `https://placehold.co/192x192/94a3b8/000000?text=${data.word}`;
+                imageContainer.innerHTML = `
+                    <img src="${url}" alt="Picture of a ${data.word}" class="w-full h-full object-cover p-2 transition duration-500 ease-in-out" 
+                         onerror="this.onerror=null; this.src='${url}';" />
+                `;
+                imageContainer.classList.add('bg-gray-100');
+            }
+        }
+
+        function renderDropSlots(data) {
+            slotsContainer.innerHTML = ''; // Clear previous slots
+            placedTiles = Array(data.sounds.length).fill(null); // Reset placed tiles
+            data.sounds.forEach((sound, index) => {
+                const slot = document.createElement('div');
+                slot.className = 'drop-zone empty-box w-20 h-20 md:w-24 md:h-24 bg-white rounded-lg transition duration-150';
+                slot.dataset.index = index;
+                slot.addEventListener('dragover', handleDragOver);
+                slot.addEventListener('dragleave', handleDragLeave);
+                slot.addEventListener('drop', handleDrop);
+                slotsContainer.appendChild(slot);
+            });
+        }
+
+        function renderDraggableTiles(data) {
+            tilesContainer.innerHTML = ''; // Clear previous tiles
+            
+            // 1. Collect all necessary sounds from all words
+            const allRequiredSounds = Array.from(new Set(wordData.flatMap(d => d.sounds)));
+            
+            // 2. Generate tiles for all required sounds
+            let tiles = allRequiredSounds.map((sound, index) => ({
+                id: `tile-${sound}-${index}-${Math.random().toString(36).substring(2, 9)}`,
+                value: sound,
+                color: data.color 
+            }));
+
+            // 3. Add some "distractor" tiles (e.g., Q, X, Z)
+            const commonDistractors = ["Q", "X", "Z"].filter(s => !allRequiredSounds.includes(s));
+            
+            commonDistractors.forEach((sound, index) => {
+                 tiles.push({
+                    id: `distractor-tile-${sound}-${index}`,
+                    value: sound,
+                    color: "f87171" // Red distractor color
+                 });
+            });
+
+            // 4. Shuffle the tiles before rendering
+            tiles = shuffleArray(tiles);
+            
+            tiles.forEach(tileData => {
+                const tile = document.createElement('div');
+                tile.id = tileData.id;
+                tile.dataset.value = tileData.value;
+                tile.draggable = true;
+                
+                // Adjust tile color based on whether it's a distractor
+                const isDistractor = tileData.color === "f87171";
+                // Use consistent colors for non-distractor tiles to simplify the pool visually
+                const bgColor = isDistractor ? 'bg-red-200' : 'bg-green-200'; 
+                const borderColor = isDistractor ? 'border-red-400' : 'border-green-400';
+                const textColor = isDistractor ? 'text-red-700' : 'text-green-700';
+
+                tile.className = `draggable-tile w-20 h-20 md:w-24 md:h-24 ${bgColor} ${borderColor} ${textColor} text-3xl font-bold flex justify-center items-center rounded-xl shadow-md p-1 transition duration-200 hover:scale-105 active:scale-95`;
+
+                tile.textContent = tileData.value;
+                tile.addEventListener('dragstart', handleDragStart);
+                tilesContainer.addEventListener('drop', handleDrop); // Allow dropping tiles back onto the container
+                tilesContainer.appendChild(tile);
+            });
+        }
+        
+        // --- Game Logic ---
+        
+        function loadWord(index) {
+            // Ensure index wraps around if we exceed the array length
+            currentWordIndex = index % wordData.length;
+            currentWord = wordData[currentWordIndex];
+            
+            // Reset UI
+            feedbackMessage.textContent = '';
+            nextButton.disabled = true;
+            checkButton.disabled = true;
+
+            // Render components
+            renderImage(currentWord);
+            renderDropSlots(currentWord);
+            renderDraggableTiles(currentWord);
+        }
+
+        function checkWord() {
+            const checkButton = document.getElementById('check-button');
+            if (checkButton.disabled) return;
+
+            // Check if placedTiles array matches the target sounds array
+            const isCorrect = currentWord.sounds.every((sound, index) => placedTiles[index] === sound);
+            
+            // Get all drop slots
+            const dropSlots = document.getElementById('drop-slots-container').children;
+
+            if (isCorrect) {
+                // Success feedback
+                feedbackMessage.className = 'h-10 text-xl font-bold mt-4 text-green-600 feedback-correct';
+                feedbackMessage.textContent = `Tino pai! You spelled ${currentWord.word.toUpperCase()}!`;
+                
+                // Visually lock tiles in place with success style
+                Array.from(dropSlots).forEach(slot => {
+                    slot.style.borderColor = '#10B981'; // Green-500
+                    slot.style.backgroundColor = '#D1FAE5'; // Green-100
+                    slot.classList.remove('drop-zone');
+                });
+                
+                // Disable check button, enable next button
+                checkButton.disabled = true;
+                nextButton.disabled = false;
+                
+                score++;
+
+            } else {
+                // Failure feedback
+                feedbackMessage.className = 'h-10 text-xl font-bold mt-4 text-red-600 feedback-incorrect';
+                feedbackMessage.textContent = 'Oops, try again! Which sound comes first?';
+                
+                // We'll just let them rearrange for now.
+            }
+        }
+        
+        function loadNextWord() {
+            loadWord(currentWordIndex + 1);
+        }
+
+        // --- Initialization ---
+        window.onload = function() {
+            loadWord(currentWordIndex);
+        };
+        
+        // --- Global Drag Listeners for body/document to handle tile returns ---
+        document.addEventListener('dragenter', (e) => e.preventDefault(), false);
+        document.addEventListener('dragover', (e) => e.preventDefault(), false);
+        document.addEventListener('drop', (e) => {
+            // This handles dropping tiles outside of a valid drop zone, returning them to the pool
+            const sourceId = e.dataTransfer.getData('sourceId');
+            const draggedTile = document.getElementById(sourceId);
+            
+            if (draggedTile && !e.target.closest('.drop-zone') && e.target.id !== 'tiles-container' && e.target.closest('#tiles-container') === null) {
+                // Check if the tile was in a slot before being dropped outside
+                const parentSlot = draggedTile.parentNode;
+                if (parentSlot && parentSlot.classList.contains('drop-zone')) {
+                    const slotIndex = Array.from(slotsContainer.children).indexOf(parentSlot);
+                    placedTiles[slotIndex] = null;
+                }
+
+                // Append it back to the tiles container
+                tilesContainer.appendChild(draggedTile);
+                draggedTile.classList.remove('opacity-40');
+                
+                updateCheckButtonState();
+            }
+        });
+
+    </script>
+</body>
+</html>
