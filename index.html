@@ -113,21 +113,21 @@
     </div>
 
     <script>
-        // --- Game Data ---
+        // --- Game Data (Sounds are now lowercase) ---
         const wordData = [
-            { word: "HAT", sounds: ["H", "A", "T"], color: "f97316", fontColor: "ffffff", bgColor: "orange-50" }, 
-            { word: "FROG", sounds: ["F", "R", "O", "G"], color: "22c55e", fontColor: "ffffff", bgColor: "lime-50" }, 
-            { word: "FISH", sounds: ["F", "I", "SH"], color: "ec4899", fontColor: "ffffff", bgColor: "pink-50" }, 
-            { word: "DUCK", sounds: ["D", "U", "CK"], color: "fcd34d", fontColor: "000000", bgColor: "yellow-50" },
-            { word: "DOG", sounds: ["D", "O", "G"], color: "ef4444", fontColor: "ffffff", bgColor: "red-50" }, 
-            { word: "SHIP", sounds: ["SH", "I", "P"], color: "0ea5e9", fontColor: "ffffff", bgColor: "sky-50" },
-            { word: "LAMP", sounds: ["L", "A", "M", "P"], color: "6366f1", fontColor: "ffffff", bgColor: "indigo-50" }, 
-            { word: "SUN", sounds: ["S", "U", "N"], color: "f97316", fontColor: "ffffff", bgColor: "yellow-50" },
-            { word: "BELL", sounds: ["B", "E", "LL"], color: "be185d", fontColor: "ffffff", bgColor: "rose-50" },
-            { word: "TENT", sounds: ["T", "E", "N", "T"], color: "14b8a6", fontColor: "ffffff", bgColor: "teal-50" },
+            { word: "HAT", sounds: ["h", "a", "t"], color: "f97316", fontColor: "ffffff", bgColor: "orange-50" }, 
+            { word: "FROG", sounds: ["f", "r", "o", "g"], color: "22c55e", fontColor: "ffffff", bgColor: "lime-50" }, 
+            { word: "FISH", sounds: ["f", "i", "sh"], color: "ec4899", fontColor: "ffffff", bgColor: "pink-50" }, 
+            { word: "DUCK", sounds: ["d", "u", "ck"], color: "fcd34d", fontColor: "000000", bgColor: "yellow-50" },
+            { word: "DOG", sounds: ["d", "o", "g"], color: "ef4444", fontColor: "ffffff", bgColor: "red-50" }, 
+            { word: "SHIP", sounds: ["sh", "i", "p"], color: "0ea5e9", fontColor: "ffffff", bgColor: "sky-50" },
+            { word: "LAMP", sounds: ["l", "a", "m", "p"], color: "6366f1", fontColor: "ffffff", bgColor: "indigo-50" }, 
+            { word: "SUN", sounds: ["s", "u", "n"], color: "f97316", fontColor: "ffffff", bgColor: "yellow-50" },
+            { word: "BELL", sounds: ["b", "e", "ll"], color: "be185d", fontColor: "ffffff", bgColor: "rose-50" },
+            { word: "TENT", sounds: ["t", "e", "n", "t"], color: "14b8a6", fontColor: "ffffff", bgColor: "teal-50" },
         ];
         
-        // --- SVG Definitions for all images ---
+        // --- SVG Definitions (remain the same, keyed by uppercase word) ---
         const wordSVGs = {
             "HAT": `
                 <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
@@ -395,7 +395,7 @@
         function renderDraggableTiles(data) {
             tilesContainer.innerHTML = ''; // Clear previous tiles
             
-            // 1. Collect all necessary sounds from all words
+            // 1. Collect all necessary sounds from all words (now lowercase)
             const allRequiredSounds = Array.from(new Set(wordData.flatMap(d => d.sounds)));
             
             // 2. Generate tiles for all required sounds
@@ -405,8 +405,8 @@
                 color: data.color 
             }));
 
-            // 3. Add some "distractor" tiles (e.g., Q, X, Z)
-            const commonDistractors = ["Q", "X", "Z"].filter(s => !allRequiredSounds.includes(s));
+            // 3. Add some "distractor" tiles (now lowercase)
+            const commonDistractors = ["q", "x", "z"].filter(s => !allRequiredSounds.includes(s));
             
             commonDistractors.forEach((sound, index) => {
                  tiles.push({
@@ -463,7 +463,7 @@
             const checkButton = document.getElementById('check-button');
             if (checkButton.disabled) return;
 
-            // Check if placedTiles array matches the target sounds array
+            // Check if placedTiles array matches the target sounds array (both are lowercase now)
             const isCorrect = currentWord.sounds.every((sound, index) => placedTiles[index] === sound);
             
             // Get all drop slots
@@ -531,4 +531,3 @@
 
     </script>
 </body>
-</html>
