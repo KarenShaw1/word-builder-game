@@ -231,7 +231,7 @@
             { word: "LAMP", sounds: ["l", "a", "m", "p"], color: "6366f1", fontColor: "ffffff", bgColor: "indigo-50" }, 
             { word: "SUN", sounds: ["s", "u", "n"], color: "f97316", fontColor: "ffffff", bgColor: "yellow-50" },
             { word: "BELL", sounds: ["b", "e", "ll"], color: "be185d", fontColor: "ffffff", bgColor: "rose-50" },
-            { word: "TENT", sounds: ["t", "e", "n", "t"], color: "14b8a6", fontColor: "ffffff", bgColor: "teal-50" },
+            // TENT has been removed
             { word: "RING", sounds: ["r", "i", "ng"], color: "a855f7", fontColor: "ffffff", bgColor: "violet-50" },
             { word: "CHIP", sounds: ["ch", "i", "p"], color: "065f46", fontColor: "ffffff", bgColor: "teal-50" },
             { word: "STAR", sounds: ["st", "ar"], color: "facc15", fontColor: "000000", bgColor: "yellow-50" },
@@ -325,33 +325,29 @@
                     <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(180, 50, 50)"/>
                     <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(225, 50, 50)"/>
                     <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(270, 50, 50)"/>
-                    <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(315, 50, 50)"/>
+                    <rect x="45" y="5" width="1=" height="15" fill="#f59e0b" transform="rotate(315, 50, 50)"/>
                 </svg>`,
             "BELL": `
                 <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Bell Body -->
-                    <path d="M 25 25 Q 20 40, 20 60 C 20 80, 80 80, 80 60 Q 80 40, 75 25 Z" fill="#fcd34d" stroke="#f59e0b" stroke-width="3"/>
-                    <!-- Loop -->
-                    <circle cx="50" cy="20" r="5" fill="#f59e0b"/>
+                    <!-- Bell (Gold body) -->
+                    <path d="M 25 25 Q 15 40, 20 75 L 80 75 Q 85 40, 75 25 Z" fill="#FFD700" stroke="#CCAA00" stroke-width="3"/>
+                    <!-- Lip/Rim -->
+                    <path d="M 20 75 A 30 5 0 0 0 80 75" fill="#CCAA00"/>
+                    <!-- Handle/Loop Top -->
+                    <rect x="45" y="10" width="10" height="20" rx="3" fill="#8B4513"/>
                     <!-- Clapper Rod -->
-                    <rect x="48" y="65" width="4" height="10" fill="#a1a1aa"/>
+                    <rect x="48" y="55" width="4" height="25" fill="#A9A9A9"/>
                     <!-- Clapper Ball -->
-                    <circle cx="50" cy="75" r="5" fill="#a1a1aa"/>
-                </svg>`,
-            "TENT": `
-                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Tent Shape -->
-                    <polygon points="50,15 15,85 85,85" fill="#10b981"/>
-                    <!-- Center Pole/Line -->
-                    <path d="M 50 15 L 50 85" stroke="#059669" stroke-width="3"/>
-                    <!-- Door Flap -->
-                    <polygon points="50,85 35,50 65,50" fill="#ffffff" stroke="#059669" stroke-width="2"/>
+                    <circle cx="50" cy="80" r="5" fill="#A9A9A9"/>
                 </svg>`,
             "RING": `
                 <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="50" cy="50" r="30" fill="none" stroke="#a855f7" stroke-width="8"/>
-                    <circle cx="50" cy="50" r="15" fill="none" stroke="#a855f7" stroke-width="8"/>
-                    <circle cx="50" cy="50" r="5" fill="#facc15"/>
+                    <!-- Gold Ring Band (Thick Circle/Donut) -->
+                    <circle cx="50" cy="50" r="30" fill="none" stroke="#FFD700" stroke-width="10"/>
+                    <!-- Diamond/Gem (White/Blue) -->
+                    <polygon points="50,15 55,30 50,45 45,30" fill="#FFFFFF" stroke="#ADD8E6" stroke-width="1"/>
+                    <!-- Small support for the gem -->
+                    <circle cx="50" cy="30" r="6" fill="#CCAA00" stroke="#FFD700" stroke-width="1"/>
                 </svg>`,
             "CHIP": `
                 <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
@@ -374,10 +370,17 @@
                 </svg>`,
             "CLOUD": `
                 <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Main cloud body -->
-                    <path d="M 20 60 C 20 40, 40 30, 50 30 S 80 40, 80 60 H 20 Z" fill="#93c5fd" stroke="#60a5fa" stroke-width="2"/>
-                    <circle cx="30" cy="50" r="15" fill="#93c5fd" stroke="#60a5fa" stroke-width="2"/>
-                    <circle cx="70" cy="50" r="15" fill="#93c5fd" stroke="#60a5fa" stroke-width="2"/>
+                    <!-- Fluffy cloud shape using multiple overlapping circles for puffiness -->
+                    <g fill="#FFFFFF" stroke="#60A5FA" stroke-width="3">
+                        <!-- Left Puff -->
+                        <circle cx="35" cy="65" r="18"/>
+                        <!-- Right Puff -->
+                        <circle cx="65" cy="65" r="18"/>
+                        <!-- Top Center Puff -->
+                        <circle cx="50" cy="50" r="25"/>
+                        <!-- Connecting base path (to cover the gaps at the bottom) -->
+                        <path d="M 20 65 A 50 20 0 0 0 80 65 L 80 65 L 20 65 Z" fill="#FFFFFF" stroke-width="0"/>
+                    </g>
                 </svg>`,
         };
 
@@ -599,9 +602,11 @@
                 value: sound
             }));
 
-            const commonDistractors = ["q", "x", "z", "j", "v", "oo", "ea"]; 
+            const commonDistractors = ["q", "x", "z", "j", "v", "oo", "ea", "ph", "ie"]; 
             let validDistractors = commonDistractors.filter(s => !requiredSounds.includes(s));
-            const chosenDistractors = shuffleArray(validDistractors).slice(0, 2);
+            
+            // Choose 3 distractors now that the word list is a bit shorter
+            const chosenDistractors = shuffleArray(validDistractors).slice(0, 3); 
 
             chosenDistractors.forEach((sound, index) => {
                  availableTiles.push({
