@@ -132,6 +132,7 @@
             <!-- Picture Area -->
             <div id="word-image-container" class="w-40 h-40 md:w-48 md:h-48 rounded-full shadow-xl border-4 border-indigo-300 overflow-hidden relative mb-4 flex items-center justify-center bg-gray-100">
                 <!-- Image will be loaded here -->
+                <p class="text-center text-gray-500">Loading...</p>
             </div>
             
             <!-- Drop Zone Slots -->
@@ -211,9 +212,8 @@
                 // Tone.start() attempts to resume or start the context
                 Tone.start().then(() => {
                     isAudioInitialized = true;
-                    // console.log("Audio context resumed/started.");
                 }).catch(err => {
-                    // console.error("Failed to start audio context:", err);
+                    console.error("Failed to start audio context:", err);
                 });
             }
         }
@@ -343,7 +343,7 @@
                     <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(180, 50, 50)"/>
                     <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(225, 50, 50)"/>
                     <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(270, 50, 50)"/>
-                    <rect x="45" y="5" width="1=" height="15" fill="#f59e0b" transform="rotate(315, 50, 50)"/>
+                    <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(315, 50, 50)"/>
                 </svg>`,
             "BELL": `
                 <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
@@ -579,9 +579,9 @@
         // --- Render Functions (Simplified for clarity) ---
 
         function renderImage(data) {
-            imageContainer.innerHTML = '';
             // Reset classes, removing any previous success-pulse or specific bg colors
-            imageContainer.className = 'w-40 h-40 md:w-48 md:h-48 rounded-full shadow-xl border-4 border-indigo-300 overflow-hidden relative mb-4 flex items-center justify-center';
+            imageContainer.className = 'w-40 h-40 md:w-48 md:h-48 rounded-full shadow-xl border-4 border-indigo-300 overflow-hidden relative mb-4 flex items-center justify-center bg-gray-100';
+            imageContainer.innerHTML = '';
             
             const svgContent = wordSVGs[data.word];
 
@@ -591,8 +591,12 @@
                 const bgClass = `bg-${data.bgColor.replace('-50', '')}-100`; // Use a slightly lighter version for the circle fill
                 imageContainer.classList.add(bgClass); 
             } else {
-                const url = `https://placehold.co/192x192/94a3b8/000000?text=${data.word}`;
-                imageContainer.innerHTML = `<img src="${url}" alt="Picture of a ${data.word}" class="w-full h-full object-cover p-2" onerror="this.onerror=null; this.src='${url}';" />`;
+                // Fallback to display the word itself if no SVG is available (crucial fallback)
+                imageContainer.innerHTML = `
+                    <div class="text-4xl text-gray-800 font-bold p-4 text-center">
+                        ${data.word}
+                        <p class="text-sm text-gray-500 font-normal mt-1">Image Placeholder</p>
+                    </div>`;
                 imageContainer.classList.add('bg-gray-100');
             }
         }
@@ -652,8 +656,7 @@
                 tile.addEventListener('dragstart', handleDragStart);
                 tilesContainer.appendChild(tile);
             });
-            // Removed the repeated tilesContainer.addEventListener('drop', handleDrop); 
-            // It is now attached once in window.onload for stability.
+            // The main drop listener for returning tiles is still attached globally in window.onload
         }
         
         // --- Game Logic ---
