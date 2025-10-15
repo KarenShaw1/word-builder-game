@@ -30,7 +30,7 @@
             border: 2px dashed #90a4ae;
         }
         .drop-zone.hover {
-            background-color: #ffe0b2; /* Light orange highlight */
+            background-color: #f7e2c9; /* Light amber highlight */
         }
 
         /* --- Success/Failure Visual Effects --- */
@@ -85,23 +85,36 @@
             min-height: 80vh;
         }
 
-        /* Style for the results breakdown */
-        .result-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid #e5e7eb;
+        /* --- Confetti CSS for Party Effect --- */
+        .confetti-particle {
+            /* Use CSS variables for randomized values from JavaScript */
+            animation-name: confetti-fall;
+            animation-timing-function: cubic-bezier(0.1, 1, 0.4, 1);
+            animation-fill-mode: forwards;
+            animation-duration: var(--duration);
+            animation-delay: var(--delay);
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                transform: translate(-50%, -50%) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                /* --tx, --ty, --rotation are set dynamically in JS */
+                transform: translate(var(--tx), var(--ty)) rotate(var(--rotation));
+                opacity: 0;
+            }
         }
     </style>
 </head>
-<body class="bg-pink-200 min-h-screen flex justify-center items-center p-4">
+<body class="bg-indigo-50 min-h-screen flex justify-center items-center p-4">
 
-    <!-- Game Container -->
-    <div id="game-container" class="game-container bg-white shadow-2xl rounded-2xl p-6 md:p-10 w-full max-w-xl flex flex-col items-center">
+    <!-- Game Container: Changed to bg-amber-100 for a brighter, warm tone -->
+    <div id="game-container" class="game-container bg-amber-100 shadow-2xl rounded-2xl p-6 md:p-10 w-full max-w-xl flex flex-col items-center">
 
         <!-- Header -->
-        <header class="text-center mb-8 w-full">
+        <header class="text-center mb-6 w-full">
             <h1 class="text-4xl font-extrabold text-indigo-700">
                 Word Builder Challenge!
             </h1>
@@ -110,24 +123,14 @@
             </p>
         </header>
         
-        <!-- Score and Attempts Tracker -->
-        <div id="status-bar" class="w-full flex justify-between items-center mb-6 p-3 bg-indigo-100 rounded-lg shadow-md">
-            <div class="text-center">
-                <span id="current-round-text" class="text-lg font-bold text-indigo-800"></span>
-            </div>
-            <div class="text-center">
-                <p class="text-sm text-gray-600">Correct / Total</p>
-                <span class="text-xl font-bold text-green-700"><span id="correct-words-count">0</span> / <span id="total-words-count">0</span></span>
-            </div>
-            <div class="text-center">
-                <p class="text-sm text-gray-600">Tries Left</p>
-                <span id="attempts-left-display" class="text-xl font-bold text-red-600">3</span>
-            </div>
+        <!-- Score Counter -->
+        <div id="score-counter" class="w-full flex justify-around text-xl font-bold mt-2 mb-6 p-3 rounded-xl bg-amber-200 shadow-md">
+            <span class="text-green-700">✅ Correct: <span id="correct-count">0</span></span>
+            <span class="text-red-700">❌ Wrong: <span id="incorrect-count">0</span></span>
         </div>
 
-
-        <!-- Picture & Slots Area (Game Interface) -->
-        <main id="main-game-area" class="w-full flex flex-col items-center space-y-6 mb-8">
+        <!-- Picture & Slots Area -->
+        <main class="w-full flex flex-col items-center space-y-6 mb-8">
             
             <!-- Picture Area -->
             <div id="word-image-container" class="w-40 h-40 md:w-48 md:h-48 rounded-full shadow-xl border-4 border-indigo-300 overflow-hidden relative mb-4 flex items-center justify-center bg-gray-100">
@@ -135,7 +138,7 @@
             </div>
             
             <!-- Drop Zone Slots -->
-            <div id="drop-slots-container" class="flex justify-center flex-wrap gap-2 md:gap-4 p-2 bg-gray-50 rounded-lg shadow-inner w-full">
+            <div id="drop-slots-container" class="flex justify-center flex-wrap gap-2 md:gap-4 p-2 bg-amber-50 rounded-lg shadow-inner w-full">
                 <!-- Drop zones will be rendered here -->
             </div>
             
@@ -148,13 +151,13 @@
                     Check
                 </button>
                 <button id="next-button" onclick="loadNextWord()" disabled class="px-6 py-3 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transition duration-150 disabled:opacity-50">
-                    Skip Word
+                    Next Word
                 </button>
             </div>
         </main>
 
         <!-- Draggable Tiles Area -->
-        <section id="tiles-section" class="w-full text-center p-4 bg-yellow-100 rounded-xl border-4 border-yellow-400 shadow-md mt-6">
+        <section id="draggable-section" class="w-full text-center p-4 bg-yellow-100 rounded-xl border-4 border-yellow-400 shadow-md mt-6">
             <h2 class="text-2xl font-bold text-yellow-800 mb-4">
                 Available Sounds
             </h2>
@@ -162,28 +165,6 @@
                 <!-- Draggable tiles will be rendered here -->
             </div>
         </section>
-
-        <!-- Final Results Screen (Hidden) -->
-        <div id="results-interface" class="hidden w-full text-center">
-             <h2 id="final-message" class="text-4xl font-extrabold mb-4 text-gray-800">Game Over!</h2>
-            
-            <div class="bg-green-50 p-6 rounded-lg mb-8 shadow-lg">
-                <p class="text-2xl text-gray-700 font-semibold mb-2">Final Score:</p>
-                <p class="text-6xl font-extrabold text-gray-800 mt-2">
-                    <span id="results-correct-count" class="text-green-600">0</span> / <span id="results-total-count">0</span>
-                </p>
-                <p class="text-xl font-medium text-gray-600 mt-1">Correct Words</p>
-            </div>
-
-            <h3 class="text-2xl font-semibold mb-4 text-gray-800 border-b pb-2">Round Breakdown</h3>
-            <div id="results-breakdown" class="max-h-96 overflow-y-auto text-left px-4">
-                <!-- Detailed results go here -->
-            </div>
-
-            <button id="restart-button-results" onclick="setupGame()" class="w-full mt-8 py-3 px-6 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 transition duration-300">
-                Play Again
-            </button>
-        </div>
 
     </div>
 
@@ -205,19 +186,84 @@
         }
 
         function playCorrectSound() {
+            // Play a short, cheerful C Major chord (C5, E5, G5)
             const now = Tone.now();
             synth.triggerAttackRelease(["C5", "E5", "G5"], "8n", now);
         }
 
         function playIncorrectSound() {
+            // Play a dissonant, short sound (D3, C#3)
             const now = Tone.now();
             synth.triggerAttackRelease(["D3", "C#3"], "16n", now);
         }
-        
-        function playFailSound() {
-            // Lower, more somber sound for running out of tries (A2, C3)
-            const now = Tone.now();
-            synth.triggerAttackRelease(["A2", "C3"], "0.3s", now);
+
+        // --- Confetti Effect Logic ---
+
+        // Function to generate a random vibrant color
+        function getRandomColor() {
+            const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#00bcd4', '#4caf50', '#ffeb3b', '#ff9800', '#ff5722'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function triggerConfetti() {
+            // 1. Create a container overlay for the confetti
+            const confettiContainer = document.createElement('div');
+            confettiContainer.id = 'confetti-container';
+            confettiContainer.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none; /* Allows user to still interact with UI underneath */
+                z-index: 9999;
+                overflow: hidden;
+            `;
+            document.body.appendChild(confettiContainer);
+
+            // 2. Generate and style confetti particles
+            const count = 150;
+            for (let i = 0; i < count; i++) {
+                const confetti = document.createElement('div');
+                const size = (Math.random() * 10) + 5; // 5px to 15px
+                const color = getRandomColor();
+                
+                confetti.style.cssText = `
+                    position: absolute;
+                    width: ${size}px;
+                    height: ${size}px;
+                    background-color: ${color};
+                    opacity: ${Math.random() + 0.5};
+                    top: 50%; /* Start in the middle of the screen */
+                    left: 50%; /* Start in the middle of the screen */
+                    border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+                    transform: translate(-50%, -50%); /* Center it on the start point */
+                `;
+
+                // 3. Set randomized CSS variables for animation
+                const angle = Math.random() * 360; // 0 to 360 degrees
+                const distance = Math.random() * 800 + 200; // 200px to 1000px distance
+                const duration = Math.random() * 1.5 + 2.5; // 2.5s to 4.0s
+                const delay = Math.random() * 0.5;
+
+                confetti.classList.add('confetti-particle');
+                // Calculate the end position based on angle and distance
+                confetti.style.setProperty('--tx', `${Math.cos(angle * Math.PI / 180) * distance}px`);
+                confetti.style.setProperty('--ty', `${Math.sin(angle * Math.PI / 180) * distance + 500}px`); // +500px for a downward gravity effect
+                confetti.style.setProperty('--duration', `${duration}s`);
+                confetti.style.setProperty('--delay', `${delay}s`);
+                confetti.style.setProperty('--rotation', `${Math.random() * 1000}deg`);
+
+                confettiContainer.appendChild(confetti);
+            }
+            
+            // 4. Clean up the container after the longest animation (4.5s)
+            setTimeout(() => {
+                const container = document.getElementById('confetti-container');
+                if (container) {
+                    document.body.removeChild(container);
+                }
+            }, 4500); 
         }
 
         // --- Game Data (Sounds are all lowercase) ---
@@ -231,7 +277,7 @@
             { word: "LAMP", sounds: ["l", "a", "m", "p"], color: "6366f1", fontColor: "ffffff", bgColor: "indigo-50" }, 
             { word: "SUN", sounds: ["s", "u", "n"], color: "f97316", fontColor: "ffffff", bgColor: "yellow-50" },
             { word: "BELL", sounds: ["b", "e", "ll"], color: "be185d", fontColor: "ffffff", bgColor: "rose-50" },
-            // TENT has been removed
+            { word: "TENT", sounds: ["t", "e", "n", "t"], color: "14b8a6", fontColor: "ffffff", bgColor: "teal-50" },
             { word: "RING", sounds: ["r", "i", "ng"], color: "a855f7", fontColor: "ffffff", bgColor: "violet-50" },
             { word: "CHIP", sounds: ["ch", "i", "p"], color: "065f46", fontColor: "ffffff", bgColor: "teal-50" },
             { word: "STAR", sounds: ["st", "ar"], color: "facc15", fontColor: "000000", bgColor: "yellow-50" },
@@ -241,161 +287,30 @@
         
         // --- SVG Definitions (remain the same, keyed by uppercase word) ---
         const wordSVGs = {
-            "HAT": `
-                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="15" y="70" width="70" height="15" rx="5" fill="#facc15"/>
-                    <path d="M 25 70 L 75 70 L 65 30 L 35 30 Z" fill="#b91c1c"/>
-                    <path d="M 35 30 Q 50 20 65 30" fill="none" stroke="#991b1b" stroke-width="3" stroke-linecap="round"/>
-                </svg>`,
-            "FROG": `
-                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Body (Lime Green) -->
-                    <circle cx="50" cy="50" r="40" fill="#84cc16"/>
-                    <!-- White Eyes on top of body -->
-                    <circle cx="35" cy="25" r="12" fill="white" stroke="#65a30d" stroke-width="2"/>
-                    <circle cx="65" cy="25" r="12" fill="white" stroke="#65a30d" stroke-width="2"/>
-                    <!-- Pupils (Black) -->
-                    <circle cx="35" cy="25" r="4" fill="black"/>
-                    <circle cx="65" cy="25" r="4" fill="black"/>
-                    <!-- Mouth (Smile) -->
-                    <path d="M 30 65 Q 50 80, 70 65" stroke="black" fill="none" stroke-width="3" stroke-linecap="round"/>
-                </svg>`,
-            "FISH": `
-                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M 20 50 C 30 20, 70 20, 80 50 C 70 80, 30 80, 20 50 Z" fill="#06b6d4"/>
-                    <path d="M 80 50 L 90 40 L 90 60 Z" fill="#06b6d4"/>
-                    <circle cx="35" cy="45" r="5" fill="white"/>
-                    <circle cx="37" cy="47" r="2" fill="black"/>
-                    <path d="M 45 40 Q 55 35 60 40" stroke="#0e7490" fill="none" stroke-width="2"/>
-                </svg>`,
-            "DUCK": `
-                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Body -->
-                    <circle cx="65" cy="65" r="25" fill="#fcd34d"/>
-                    <!-- Head -->
-                    <circle cx="40" cy="40" r="20" fill="#fcd34d"/>
-                    <!-- Beak -->
-                    <path d="M 50 45 L 60 55 L 50 65 Z" fill="#f59e0b"/>
-                    <!-- Eye -->
-                    <circle cx="35" cy="35" r="3" fill="black"/>
-                </svg>`,
-            "DOG": `
-                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Head -->
-                    <circle cx="50" cy="55" r="35" fill="#92400e"/>
-                    <!-- Left Ear -->
-                    <path d="M 30 20 L 20 40 L 35 45 Z" fill="#78350f"/>
-                    <!-- Right Ear -->
-                    <path d="M 70 20 L 80 40 L 65 45 Z" fill="#78350f"/>
-                    <!-- Eyes -->
-                    <circle cx="40" cy="50" r="3" fill="white"/>
-                    <circle cx="60" cy="50" r="3" fill="white"/>
-                    <!-- Nose -->
-                    <circle cx="50" cy="65" r="5" fill="black"/>
-                </svg>`,
-            "SHIP": `
-                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Hull -->
-                    <path d="M 10 75 L 90 75 L 80 85 L 20 85 Z" fill="#78350f"/>
-                    <!-- Mast -->
-                    <rect x="48" y="25" width="4" height="50" fill="#a1a1aa"/>
-                    <!-- Sail -->
-                    <polygon points="52,25 75,45 52,65" fill="#fef3c7" stroke="#eab308" stroke-width="1"/>
-                </svg>`,
-            "LAMP": `
-                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Base -->
-                    <rect x="40" y="80" width="20" height="5" fill="#78350f"/>
-                    <!-- Stand -->
-                    <rect x="48" y="30" width="4" height="50" fill="#a1a1aa"/>
-                    <!-- Shade -->
-                    <path d="M 30 30 L 70 30 L 60 15 L 40 15 Z" fill="#fcd34d"/>
-                    <!-- Light glow placeholder -->
-                    <circle cx="50" cy="55" r="10" fill="white" opacity="0.8"/>
-                </svg>`,
-            "SUN": `
-                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Center Circle -->
-                    <circle cx="50" cy="50" r="30" fill="#f59e0b"/>
-                    <!-- Rays -->
-                    <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(0, 50, 50)"/>
-                    <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(45, 50, 50)"/>
-                    <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(90, 50, 50)"/>
-                    <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(135, 50, 50)"/>
-                    <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(180, 50, 50)"/>
-                    <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(225, 50, 50)"/>
-                    <rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(270, 50, 50)"/>
-                    <rect x="45" y="5" width="1=" height="15" fill="#f59e0b" transform="rotate(315, 50, 50)"/>
-                </svg>`,
-            "BELL": `
-                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Bell (Gold body) -->
-                    <path d="M 25 25 Q 15 40, 20 75 L 80 75 Q 85 40, 75 25 Z" fill="#FFD700" stroke="#CCAA00" stroke-width="3"/>
-                    <!-- Lip/Rim -->
-                    <path d="M 20 75 A 30 5 0 0 0 80 75" fill="#CCAA00"/>
-                    <!-- Handle/Loop Top -->
-                    <rect x="45" y="10" width="10" height="20" rx="3" fill="#8B4513"/>
-                    <!-- Clapper Rod -->
-                    <rect x="48" y="55" width="4" height="25" fill="#A9A9A9"/>
-                    <!-- Clapper Ball -->
-                    <circle cx="50" cy="80" r="5" fill="#A9A9A9"/>
-                </svg>`,
-            "RING": `
-                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Gold Ring Band (Thick Circle/Donut) -->
-                    <circle cx="50" cy="50" r="30" fill="none" stroke="#FFD700" stroke-width="10"/>
-                    <!-- Diamond/Gem (White/Blue) -->
-                    <polygon points="50,15 55,30 50,45 45,30" fill="#FFFFFF" stroke="#ADD8E6" stroke-width="1"/>
-                    <!-- Small support for the gem -->
-                    <circle cx="50" cy="30" r="6" fill="#CCAA00" stroke="#FFD700" stroke-width="1"/>
-                </svg>`,
-            "CHIP": `
-                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Chip shape -->
-                    <rect x="25" y="15" width="50" height="70" rx="8" fill="#facc15" stroke="#f59e0b" stroke-width="2"/>
-                    <!-- Internal color/texture -->
-                    <rect x="30" y="20" width="40" height="60" rx="5" fill="#fef3c7"/>
-                </svg>`,
-            "STAR": `
-                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
-                    <!-- 5-pointed Star shape -->
-                    <polygon points="50,5 65,35 95,35 70,55 80,85 50,65 20,85 30,55 5,35 35,35" fill="#fde047"/>
-                </svg>`,
-            "TREE": `
-                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Trunk -->
-                    <rect x="45" y="65" width="10" height="20" fill="#78350f"/>
-                    <!-- Leaves (Simple stylized crown) -->
-                    <path d="M 50 10 Q 20 20 20 55 C 20 70, 80 70, 80 55 Q 80 20 50 10 Z" fill="#10b981"/>
-                </svg>`,
-            "CLOUD": `
-                <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Fluffy cloud shape using multiple overlapping circles for puffiness -->
-                    <g fill="#FFFFFF" stroke="#60A5FA" stroke-width="3">
-                        <!-- Left Puff -->
-                        <circle cx="35" cy="65" r="18"/>
-                        <!-- Right Puff -->
-                        <circle cx="65" cy="65" r="18"/>
-                        <!-- Top Center Puff -->
-                        <circle cx="50" cy="50" r="25"/>
-                        <!-- Connecting base path (to cover the gaps at the bottom) -->
-                        <path d="M 20 65 A 50 20 0 0 0 80 65 L 80 65 L 20 65 Z" fill="#FFFFFF" stroke-width="0"/>
-                    </g>
-                </svg>`,
+            "HAT": `<svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg"><rect x="15" y="70" width="70" height="15" rx="5" fill="#facc15"/><path d="M 25 70 L 75 70 L 65 30 L 35 30 Z" fill="#b91c1c"/><path d="M 35 30 Q 50 20 65 30" fill="none" stroke="#991b1b" stroke-width="3" stroke-linecap="round"/></svg>`,
+            "FROG": `<svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="#84cc16"/><circle cx="35" cy="25" r="12" fill="white" stroke="#65a30d" stroke-width="2"/><circle cx="65" cy="25" r="12" fill="white" stroke="#65a30d" stroke-width="2"/><circle cx="35" cy="25" r="4" fill="black"/><circle cx="65" cy="25" r="4" fill="black"/><path d="M 30 65 Q 50 80, 70 65" stroke="black" fill="none" stroke-width="3" stroke-linecap="round"/></svg>`,
+            "FISH": `<svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg"><path d="M 20 50 C 30 20, 70 20, 80 50 C 70 80, 30 80, 20 50 Z" fill="#06b6d4"/><path d="M 80 50 L 90 40 L 90 60 Z" fill="#06b6d4"/><circle cx="35" cy="45" r="5" fill="white"/><circle cx="37" cy="47" r="2" fill="black"/><path d="M 45 40 Q 55 35 60 40" stroke="#0e7490" fill="none" stroke-width="2"/></svg>`,
+            "DUCK": `<svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg"><circle cx="65" cy="65" r="25" fill="#fcd34d"/><circle cx="40" cy="40" r="20" fill="#fcd34d"/><path d="M 50 45 L 60 55 L 50 65 Z" fill="#f59e0b"/><circle cx="35" cy="35" r="3" fill="black"/></svg>`,
+            "DOG": `<svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="55" r="35" fill="#92400e"/><path d="M 30 20 L 20 40 L 35 45 Z" fill="#78350f"/><path d="M 70 20 L 80 40 L 65 45 Z" fill="#78350f"/><circle cx="40" cy="50" r="3" fill="white"/><circle cx="60" cy="50" r="3" fill="white"/><circle cx="50" cy="65" r="5" fill="black"/></svg>`,
+            "SHIP": `<svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg"><path d="M 10 75 L 90 75 L 80 85 L 20 85 Z" fill="#78350f"/><rect x="48" y="25" width="4" height="50" fill="#a1a1aa"/><polygon points="52,25 75,45 52,65" fill="#fef3c7" stroke="#eab308" stroke-width="1"/></svg>`,
+            "LAMP": `<svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg"><rect x="40" y="80" width="20" height="5" fill="#78350f"/><rect x="48" y="30" width="4" height="50" fill="#a1a1aa"/><path d="M 30 30 L 70 30 L 60 15 L 40 15 Z" fill="#fcd34d"/><circle cx="50" cy="55" r="10" fill="white" opacity="0.8"/></svg>`,
+            "SUN": `<svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="30" fill="#f59e0b"/><rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(0, 50, 50)"/><rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(45, 50, 50)"/><rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(90, 50, 50)"/><rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(135, 50, 50)"/><rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(180, 50, 50)"/><rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(225, 50, 50)"/><rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(270, 50, 50)"/><rect x="45" y="5" width="10" height="15" fill="#f59e0b" transform="rotate(315, 50, 50)"/></svg>`,
+            "BELL": `<svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg"><path d="M 25 25 Q 20 40, 20 60 C 20 80, 80 80, 80 60 Q 80 40, 75 25 Z" fill="#fcd34d" stroke="#f59e0b" stroke-width="3"/><circle cx="50" cy="20" r="5" fill="#f59e0b"/><rect x="48" y="65" width="4" height="10" fill="#a1a1aa"/><circle cx="50" cy="75" r="5" fill="#a1a1aa"/></svg>`,
+            "TENT": `<svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg"><polygon points="50,15 15,85 85,85" fill="#10b981"/><path d="M 50 15 L 50 85" stroke="#059669" stroke-width="3"/><polygon points="50,85 35,50 65,50" fill="#ffffff" stroke="#059669" stroke-width="2"/></svg>`,
+            "RING": `<svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="30" fill="none" stroke="#a855f7" stroke-width="8"/><circle cx="50" cy="50" r="15" fill="none" stroke="#a855f7" stroke-width="8"/><circle cx="50" cy="50" r="5" fill="#facc15"/></svg>`,
+            "CHIP": `<svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg"><rect x="25" y="15" width="50" height="70" rx="8" fill="#facc15" stroke="#f59e0b" stroke-width="2"/><rect x="30" y="20" width="40" height="60" rx="5" fill="#fef3c7"/></svg>`,
+            "STAR": `<svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg"><polygon points="50,5 65,35 95,35 70,55 80,85 50,65 20,85 30,55 5,35 35,35" fill="#fde047"/></svg>`,
+            "TREE": `<svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg"><rect x="45" y="65" width="10" height="20" fill="#78350f"/><path d="M 50 10 Q 20 20 20 55 C 20 70, 80 70, 80 55 Q 80 20 50 10 Z" fill="#10b981"/></svg>`,
+            "CLOUD": `<svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg"><path d="M 20 60 C 20 40, 40 30, 50 30 S 80 40, 80 60 H 20 Z" fill="#93c5fd" stroke="#60a5fa" stroke-width="2"/><circle cx="30" cy="50" r="15" fill="#93c5fd" stroke="#60a5fa" stroke-width="2"/><circle cx="70" cy="50" r="15" fill="#93c5fd" stroke="#60a5fa" stroke-width="2"/></svg>`,
         };
 
 
-        // --- Game State ---
-        let gameWords = []; // Shuffled list of words for the current game
+        // --- Game State & Score Counter ---
         let currentWordIndex = 0;
-        let currentWordData = {}; // Data for the current word
+        let currentWord = {};
         let placedTiles = [];
-        
-        let totalCorrect = 0;
-        let totalIncorrect = 0;
-        let attemptsLeft = 3;
-        
-        let roundResults = []; // Stores { word: "...", status: "correct"/"failed", attempts: 1, finalRack: [] }
+        let correctCount = 0; 
+        let incorrectCount = 0; 
 
         // --- DOM Elements ---
         const imageContainer = document.getElementById('word-image-container');
@@ -404,22 +319,7 @@
         const feedbackMessage = document.getElementById('feedback-message');
         const checkButton = document.getElementById('check-button');
         const nextButton = document.getElementById('next-button');
-
-        // Status bar elements
-        const currentRoundText = document.getElementById('current-round-text');
-        const correctWordsCount = document.getElementById('correct-words-count');
-        const totalWordsCount = document.getElementById('total-words-count');
-        const attemptsLeftDisplay = document.getElementById('attempts-left-display');
-        
-        // Results elements
-        const mainGameArea = document.getElementById('main-game-area');
-        const tilesSection = document.getElementById('tiles-section');
-        const resultsInterface = document.getElementById('results-interface');
-        const resultsCorrectCount = document.getElementById('results-correct-count');
-        const resultsTotalCount = document.getElementById('results-total-count');
-        const resultsBreakdown = document.getElementById('results-breakdown');
-        const finalMessage = document.getElementById('final-message');
-
+        const draggableSection = document.getElementById('draggable-section');
 
         // --- Utility Functions ---
 
@@ -427,41 +327,12 @@
         const shuffleArray = (array) => {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = array[j], array[i];
+                [array[i], array[j]] = [array[j], array[i]];
             }
             return array;
         };
         
-        // Resets the style of the drop slots
-        function resetSlotStyles() {
-            Array.from(slotsContainer.children).forEach(slot => {
-                slot.style.borderColor = '';
-                slot.style.backgroundColor = '';
-                slot.classList.add('drop-zone');
-                slot.classList.remove('transition-all');
-            });
-        }
-        
-        // Updates the overall score displayed in the status bar
-        function updateScoreDisplay() {
-            correctWordsCount.textContent = totalCorrect;
-            totalWordsCount.textContent = totalCorrect + totalIncorrect;
-            currentRoundText.textContent = `Word ${currentWordIndex + 1} / ${gameWords.length}`;
-            attemptsLeftDisplay.textContent = attemptsLeft;
-            
-            if (attemptsLeft === 1) {
-                attemptsLeftDisplay.classList.add('text-yellow-600');
-                attemptsLeftDisplay.classList.remove('text-red-600');
-            } else if (attemptsLeft === 0) {
-                attemptsLeftDisplay.classList.add('text-red-600');
-                attemptsLeftDisplay.classList.remove('text-yellow-600');
-            } else {
-                attemptsLeftDisplay.classList.remove('text-yellow-600', 'text-red-600');
-                attemptsLeftDisplay.classList.add('text-red-600');
-            }
-        }
-
-        // --- Drag and Drop Handlers (Kept the same) ---
+        // --- Drag and Drop Handlers (FIXED) ---
         
         function handleDragStart(e) {
             e.dataTransfer.setData('text/plain', e.target.dataset.value);
@@ -490,53 +361,60 @@
             const soundValue = e.dataTransfer.getData('text/plain');
             const sourceId = e.dataTransfer.getData('sourceId');
             const draggedTile = document.getElementById(sourceId);
-            const dropTarget = e.target.closest('.drop-zone');
 
             if (!draggedTile) return;
 
-            // 1. Logic for dropping into a slot
-            if (dropTarget && dropTarget.children.length === 0) {
-                // Determine if tile is coming from another slot or the rack
-                const isFromSlot = draggedTile.parentNode.classList.contains('drop-zone');
-                
-                // If it came from a slot, clear that old slot's value
-                if (isFromSlot) {
-                    const oldIndex = Array.from(slotsContainer.children).indexOf(draggedTile.parentNode);
-                    placedTiles[oldIndex] = null;
+            const dropTargetSlot = e.target.closest('.drop-zone');
+            const dropOnPool = e.target.closest('#tiles-container');
+
+            if (dropTargetSlot) {
+                // --- 1. Dropping onto a Slot ---
+                dropTargetSlot.classList.remove('hover');
+
+                if (dropTargetSlot.children.length === 0) {
+                    // 1a. Slot Drop: Place tile into an empty drop zone
+                    
+                    // Clear the tile's previous slot state if it came from one
+                    if (draggedTile.parentNode.classList.contains('drop-zone')) {
+                        const oldIndex = Array.from(slotsContainer.children).indexOf(draggedTile.parentNode);
+                        placedTiles[oldIndex] = null;
+                    } else if (draggedTile.parentNode.id === 'tiles-container') {
+                        // If it came from the pool, nothing to clear in placedTiles
+                    }
+                    
+                    dropTargetSlot.appendChild(draggedTile);
+
+                    const newIndex = Array.from(slotsContainer.children).indexOf(dropTargetSlot);
+                    placedTiles[newIndex] = soundValue;
+
+                } else {
+                    // 1b. Slot Swap: Swapping tiles
+                    const existingTile = dropTargetSlot.firstElementChild;
+                    const oldParent = draggedTile.parentNode;
+                    
+                    if (oldParent.id === 'tiles-container') {
+                        // Tile came from pool, existing tile goes back to pool
+                        oldParent.appendChild(existingTile); 
+                        dropTargetSlot.appendChild(draggedTile); 
+                        
+                        // Update only the new slot index as the old tile went back to the unsorted pool
+                        const newIndex = Array.from(slotsContainer.children).indexOf(dropTargetSlot);
+                        placedTiles[newIndex] = draggedTile.dataset.value;
+                    } else {
+                        // Tile came from another slot (standard slot-slot swap)
+                        oldParent.appendChild(existingTile);
+                        dropTargetSlot.appendChild(draggedTile);
+                        
+                        const newIndex = Array.from(slotsContainer.children).indexOf(dropTargetSlot);
+                        const oldIndex = Array.from(slotsContainer.children).indexOf(oldParent);
+                        
+                        placedTiles[newIndex] = draggedTile.dataset.value;
+                        placedTiles[oldIndex] = existingTile.dataset.value;
+                    }
                 }
+            } else if (dropOnPool) {
+                // --- 2. Dropping back onto the Pool (tiles-container or a tile inside it) ---
                 
-                // Place tile in new slot
-                dropTarget.appendChild(draggedTile);
-                draggedTile.classList.remove('opacity-40');
-                dropTarget.classList.remove('hover');
-
-                // Update placedTiles array
-                const newIndex = Array.from(slotsContainer.children).indexOf(dropTarget);
-                placedTiles[newIndex] = soundValue;
-                
-                updateCheckButtonState();
-
-            // 2. Logic for swapping tiles between slots
-            } else if (dropTarget && dropTarget.classList.contains('drop-zone') && dropTarget.children.length > 0) {
-                 const existingTile = dropTarget.firstElementChild;
-                 const oldParent = draggedTile.parentNode;
-                 
-                 // Check if swap is necessary (only swap if dragging from tiles container or another slot)
-                 if (oldParent.id === 'tiles-container' && !existingTile.classList.contains('draggable-tile')) return; // Cannot drag to replace non-tile
-                 
-                 // Perform the swap
-                 oldParent.appendChild(existingTile);
-                 dropTarget.appendChild(draggedTile);
-                 
-                 // Update placedTiles array after swap
-                 const newIndex = Array.from(slotsContainer.children).indexOf(dropTarget);
-                 const oldIndex = Array.from(slotsContainer.children).indexOf(oldParent);
-                 
-                 placedTiles[newIndex] = draggedTile.dataset.value;
-                 placedTiles[oldIndex] = existingTile.dataset.value;
-                 
-            // 3. Logic for dropping back into the source area
-            } else if (e.target.id === 'tiles-container' || e.target.closest('#tiles-container')) {
                 // If it came from a slot, clear that slot's value
                 const parentSlot = draggedTile.parentNode;
                 if (parentSlot && parentSlot.classList.contains('drop-zone')) {
@@ -544,12 +422,13 @@
                     placedTiles[slotIndex] = null;
                 }
                 
-                // Append it back to the tiles container
+                // Append it back to the tiles container (this places it at the end of the list)
                 tilesContainer.appendChild(draggedTile);
-                draggedTile.classList.remove('opacity-40');
-                
-                updateCheckButtonState();
             }
+
+            // Finish drag operation regardless of success
+            draggedTile.classList.remove('opacity-40');
+            updateCheckButtonState();
         }
         
         function updateCheckButtonState() {
@@ -558,7 +437,12 @@
             checkButton.disabled = !allSlotsFilled;
         }
 
-        // --- Render Functions (Simplified for clarity) ---
+        function updateScoreDisplay() {
+            document.getElementById('correct-count').textContent = correctCount;
+            document.getElementById('incorrect-count').textContent = incorrectCount;
+        }
+
+        // --- Render Functions ---
 
         function renderImage(data) {
             imageContainer.innerHTML = '';
@@ -568,23 +452,23 @@
 
             if (svgContent) {
                 imageContainer.innerHTML = svgContent;
-                // Add the specific background color
-                const bgClass = `bg-${data.bgColor.replace('-50', '')}-100`; // Use a slightly lighter version for the circle fill
-                imageContainer.classList.add(bgClass); 
+                imageContainer.classList.add(`bg-${data.bgColor}`); 
             } else {
                 const url = `https://placehold.co/192x192/94a3b8/000000?text=${data.word}`;
-                imageContainer.innerHTML = `<img src="${url}" alt="Picture of a ${data.word}" class="w-full h-full object-cover p-2" onerror="this.onerror=null; this.src='${url}';" />`;
+                imageContainer.innerHTML = `
+                    <img src="${url}" alt="Picture of a ${data.word}" class="w-full h-full object-cover p-2 transition duration-500 ease-in-out" 
+                         onerror="this.onerror=null; this.src='${url}';" />
+                `;
                 imageContainer.classList.add('bg-gray-100');
             }
         }
 
         function renderDropSlots(data) {
-            slotsContainer.innerHTML = ''; 
-            placedTiles = Array(data.sounds.length).fill(null); 
+            slotsContainer.innerHTML = '';
+            placedTiles = Array(data.sounds.length).fill(null);
             data.sounds.forEach((sound, index) => {
                 const slot = document.createElement('div');
-                // Use relative positioning to allow tiles to be placed in the center
-                slot.className = 'drop-zone w-20 h-20 md:w-24 md:h-24 bg-white rounded-lg transition duration-150 relative flex items-center justify-center border-2 border-dashed border-gray-400';
+                slot.className = 'drop-zone empty-box w-20 h-20 md:w-24 md:h-24 bg-white rounded-lg transition duration-150';
                 slot.dataset.index = index;
                 slot.addEventListener('dragover', handleDragOver);
                 slot.addEventListener('dragleave', handleDragLeave);
@@ -594,32 +478,39 @@
         }
 
         function renderDraggableTiles(data) {
-            tilesContainer.innerHTML = ''; 
+            tilesContainer.innerHTML = '';
             
             const requiredSounds = Array.from(new Set(data.sounds));
             let availableTiles = requiredSounds.map(sound => ({
                 id: `tile-${sound}-${Math.random().toString(36).substring(2, 9)}`,
-                value: sound
+                value: sound,
+                isDistractor: false
             }));
 
-            const commonDistractors = ["q", "x", "z", "j", "v", "oo", "ea", "ph", "ie"]; 
+            // Common distractors list
+            const commonDistractors = ["q", "x", "z", "j", "v", "oo", "ea", "ph", "ie", "au", "ei"]; 
+            
+            // Filter distractors that are NOT in the required sounds
             let validDistractors = commonDistractors.filter(s => !requiredSounds.includes(s));
             
-            // Choose 3 distractors now that the word list is a bit shorter
-            const chosenDistractors = shuffleArray(validDistractors).slice(0, 3); 
+            // INCREASED: Choose the first 4 available valid distractors
+            const chosenDistractors = shuffleArray(validDistractors).slice(0, 4);
 
             chosenDistractors.forEach((sound, index) => {
                  availableTiles.push({
                     id: `distractor-tile-${sound}-${index}`,
-                    value: sound
+                    value: sound,
+                    isDistractor: true
                  });
             });
 
+            // Shuffle the tiles before rendering
             availableTiles = shuffleArray(availableTiles);
             
-            const bgColor = 'bg-blue-100';
-            const borderColor = 'border-blue-400';
-            const textColor = 'text-blue-800';
+            // UNIFIED COLOR SCHEME: Indigo to match the app theme 
+            const bgColor = 'bg-indigo-100';
+            const borderColor = 'border-indigo-400';
+            const textColor = 'text-indigo-800';
 
             availableTiles.forEach(tileData => {
                 const tile = document.createElement('div');
@@ -627,256 +518,140 @@
                 tile.dataset.value = tileData.value;
                 tile.draggable = true;
                 
+                // Identical class list for all tiles (required and distractors)
                 tile.className = `draggable-tile w-20 h-20 md:w-24 md:h-24 ${bgColor} ${borderColor} ${textColor} text-3xl font-bold flex justify-center items-center rounded-xl shadow-md p-1 transition duration-200 hover:scale-105 active:scale-95 border-2`;
 
-                tile.textContent = tileData.value;
+                // Set text content to its existing lowercase value
+                tile.textContent = tileData.value; 
+                
                 tile.addEventListener('dragstart', handleDragStart);
                 tilesContainer.appendChild(tile);
             });
-            // Re-adding the drop listener to the container itself for returning tiles
-            tilesContainer.addEventListener('drop', handleDrop); 
+            
+            // Attach drop listener to the container itself (FIXED: handleDrop logic now supports dropping on children)
+            tilesContainer.addEventListener('drop', handleDrop);
         }
         
         // --- Game Logic ---
         
-        function setupGame() {
-            // Reset main game state
-            gameWords = shuffleArray([...wordData]);
-            currentWordIndex = 0;
-            totalCorrect = 0;
-            totalIncorrect = 0;
-            roundResults = [];
+        function loadWord(index) {
+            if (index >= wordData.length) {
+                // --- Game Finished Condition ---
+                triggerConfetti(); // Party time!
+                
+                feedbackMessage.className = 'h-10 text-2xl font-extrabold mt-4 text-pink-600 feedback-correct';
+                feedbackMessage.textContent = 'YOU DID IT! 🎉 All words completed! 🎉';
+                
+                // Clear and update main area for "Game Over"
+                imageContainer.innerHTML = '<span class="text-4xl">🏆</span>';
+                imageContainer.className = 'w-40 h-40 md:w-48 md:h-48 rounded-full shadow-xl border-4 border-pink-500 overflow-hidden relative mb-4 flex items-center justify-center bg-white';
 
-            // Show game area, hide results
-            mainGameArea.classList.remove('hidden');
-            tilesSection.classList.remove('hidden');
-            resultsInterface.classList.add('hidden');
-            
-            loadWord();
-        }
+                slotsContainer.innerHTML = '<p class="text-gray-500 text-lg">Restart the preview to play again!</p>';
+                tilesContainer.innerHTML = '';
+                
+                // Hide interactive elements
+                checkButton.style.display = 'none';
+                nextButton.style.display = 'none';
+                draggableSection.style.display = 'none';
 
-        function loadWord() {
-            // Check if game is finished
-            if (currentWordIndex >= gameWords.length) {
-                return endGame();
-            }
-
-            currentWordData = gameWords[currentWordIndex];
-            
-            // Reset round state
-            attemptsLeft = 3;
-            resetSlotStyles();
-            
-            // Reset UI
-            feedbackMessage.textContent = 'Drag and drop the sounds into the correct order!';
-            feedbackMessage.className = 'h-10 text-xl font-bold mt-4 text-gray-700';
-            nextButton.disabled = false; // Next button is enabled to skip the word
-            checkButton.disabled = true;
-            imageContainer.classList.remove('success-pulse');
-
-            // Render components
-            renderImage(currentWordData);
-            renderDropSlots(currentWordData);
-            renderDraggableTiles(currentWordData);
-            updateScoreDisplay(); // Update round number and attempts
-        }
-
-        function checkWord() {
-            if (checkButton.disabled) return;
-
-            // Collect the word currently in the slots
-            const currentAttempt = placedTiles.filter(t => t !== null);
-            if (currentAttempt.length !== currentWordData.sounds.length) {
-                feedbackMessage.className = 'h-10 text-xl font-bold mt-4 text-orange-600 feedback-incorrect';
-                feedbackMessage.textContent = 'Please fill all the sound slots.';
                 return;
             }
 
-            const isCorrect = currentWordData.sounds.every((sound, index) => placedTiles[index] === sound);
+            currentWordIndex = index % wordData.length;
+            currentWord = wordData[currentWordIndex];
             
+            // Reset UI for new word
+            feedbackMessage.textContent = '';
+            nextButton.disabled = true;
+            checkButton.disabled = true;
+            checkButton.style.display = 'inline-block';
+            nextButton.style.display = 'inline-block';
+            draggableSection.style.display = 'block';
+
+            // Render components
+            renderImage(currentWord);
+            renderDropSlots(currentWord);
+            renderDraggableTiles(currentWord);
+            
+            updateScoreDisplay(); 
+        }
+
+        function checkWord() {
+            const checkButton = document.getElementById('check-button');
+            if (checkButton.disabled) return;
+
+            // Check if placed tiles match the correct sequence
+            const isCorrect = currentWord.sounds.every((sound, index) => placedTiles[index] === sound);
+            const dropSlots = document.getElementById('drop-slots-container').children;
+
             if (isCorrect) {
-                // --- CORRECT ATTEMPT ---
                 playCorrectSound();
+                
                 imageContainer.classList.add('success-pulse');
                 
                 feedbackMessage.className = 'h-10 text-xl font-bold mt-4 text-green-600 feedback-correct';
-                feedbackMessage.textContent = `Tino pai! (${currentWordData.word.toUpperCase()})`;
+                feedbackMessage.textContent = `Tino pai! You spelled ${currentWord.word.toUpperCase()}!`;
                 
-                // Visually lock tiles in place with success style
-                Array.from(slotsContainer.children).forEach(slot => {
-                    slot.style.borderColor = '#10B981';
-                    slot.style.backgroundColor = '#D1FAE5';
-                    slot.classList.remove('drop-zone');
+                // Lock the slots visually
+                Array.from(dropSlots).forEach(slot => {
+                    slot.style.borderColor = '#10B981'; // Green-500
+                    slot.style.backgroundColor = '#D1FAE5'; // Green-100
+                    slot.classList.remove('drop-zone'); // Remove drop behavior
                 });
                 
-                // Record result and advance
-                totalCorrect++;
-                roundResults.push({
-                    word: currentWordData.word,
-                    status: "correct",
-                    attempts: 3 - attemptsLeft + 1, // Calculate attempts used
-                    finalRack: currentAttempt
-                });
-
-                // Disable buttons and automatically advance
                 checkButton.disabled = true;
-                nextButton.disabled = true;
+                nextButton.disabled = false;
                 
-                setTimeout(loadNextWord, 1500); // Advance after 1.5s
-                
+                correctCount++; 
             } else {
-                // --- INCORRECT ATTEMPT ---
+                playIncorrectSound();
+
+                feedbackMessage.className = 'h-10 text-xl font-bold mt-4 text-red-600 feedback-incorrect';
+                feedbackMessage.textContent = 'Oops, try again! Which sound comes first?';
                 
-                attemptsLeft--;
-                updateScoreDisplay(); // Update tries left
-
-                if (attemptsLeft === 0) {
-                    // --- FAILED ROUND ---
-                    playFailSound();
-                    
-                    feedbackMessage.className = 'h-10 text-xl font-bold mt-4 text-red-600 feedback-incorrect';
-                    feedbackMessage.textContent = `Out of tries! The word was ${currentWordData.word.toUpperCase()}.`;
-                    
-                    // Visually lock slots with a failure style
-                    Array.from(slotsContainer.children).forEach(slot => {
-                        slot.style.borderColor = '#F87171'; // Red-400
-                        slot.style.backgroundColor = '#FEE2E2'; // Red-100
-                        slot.classList.remove('drop-zone');
-                    });
-                    
-                    // Record failure
-                    totalIncorrect++;
-                    roundResults.push({
-                        word: currentWordData.word,
-                        status: "failed",
-                        attempts: 3,
-                        finalRack: currentAttempt
-                    });
-
-                    // Disable buttons and automatically advance
-                    checkButton.disabled = true;
-                    nextButton.disabled = true;
-                    setTimeout(loadNextWord, 3000); // Wait longer to show answer
-                } else {
-                    // --- MISTAKE, TRY AGAIN ---
-                    playIncorrectSound();
-                    
-                    feedbackMessage.className = 'h-10 text-xl font-bold mt-4 text-red-600 feedback-incorrect';
-                    feedbackMessage.textContent = `Oops, try again! ${attemptsLeft} tries remaining.`;
-                }
+                incorrectCount++; 
             }
+            
+            updateScoreDisplay(); 
         }
         
         function loadNextWord() {
-            currentWordIndex++;
-            loadWord();
+            imageContainer.classList.remove('success-pulse');
+            loadWord(currentWordIndex + 1);
         }
 
-        function endGame() {
-            // Hide game area, show results interface
-            mainGameArea.classList.add('hidden');
-            tilesSection.classList.add('hidden');
-            resultsInterface.classList.remove('hidden');
-
-            const totalWords = gameWords.length;
-            const successRate = totalCorrect / totalWords;
-            
-            let messageText;
-            let emoji;
-            let colorClass;
-            
-            // Define threshold (70% or more words correct)
-            if (successRate >= 0.7) {
-                messageText = 'Well done! You nailed the challenge! 🥳';
-                emoji = '🥳';
-                colorClass = 'text-green-600';
-            } else {
-                messageText = 'Keep going! Let’s practice those sounds again. 😔';
-                emoji = '😔';
-                colorClass = 'text-red-600';
-            }
-            
-            // Update the final summary
-            finalMessage.className = `text-4xl font-extrabold mb-4 ${colorClass}`;
-            finalMessage.innerHTML = `${messageText} ${emoji}`;
-            
-            resultsCorrectCount.textContent = totalCorrect;
-            resultsTotalCount.textContent = totalWords;
-
-            // Display detailed breakdown
-            resultsBreakdown.innerHTML = '';
-            roundResults.forEach(item => {
-                const isCorrect = item.status === 'correct';
-                
-                const resultDiv = document.createElement('div');
-                resultDiv.classList.add('result-item', isCorrect ? 'text-green-800' : 'text-red-800');
-
-                // Left side: Word & Status
-                const wordLine = document.createElement('div');
-                wordLine.classList.add('flex', 'flex-col');
-                wordLine.innerHTML = `
-                    <span class="font-bold text-xl">${item.word}</span>
-                    <span class="text-sm ${isCorrect ? 'text-green-600' : 'text-red-600'}">
-                        ${isCorrect ? 'Correct!' : 'Failed.'} (Tries: ${item.attempts})
-                    </span>
-                `;
-                resultDiv.appendChild(wordLine);
-
-                // Right side: Attempted Word
-                const attemptLine = document.createElement('div');
-                attemptLine.classList.add('text-right');
-                
-                const attemptLabel = document.createElement('span');
-                attemptLabel.className = `word-result-label px-3 py-1 rounded-full ${isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
-                attemptLabel.textContent = item.finalRack.length > 0 ? item.finalRack.join(' ').toUpperCase() : 'N/A';
-                
-                resultDiv.appendChild(attemptLabel);
-                resultsBreakdown.appendChild(resultDiv);
-            });
-        }
-
-
-        // --- Global Drag Listeners for body/document to handle tile returns ---
+        // --- Initialization ---
+        window.onload = function() {
+            initializeAudio(); 
+            // Start the game with a random word (optional)
+            // currentWordIndex = Math.floor(Math.random() * wordData.length);
+            loadWord(currentWordIndex);
+        };
+        
+        // --- Global Drag Listeners for body/document to handle tile returns (Fixed and Simplified) ---
         document.addEventListener('dragenter', (e) => e.preventDefault(), false);
         document.addEventListener('dragover', (e) => e.preventDefault(), false);
         document.addEventListener('drop', (e) => {
             const sourceId = e.dataTransfer.getData('sourceId');
             const draggedTile = document.getElementById(sourceId);
-            
-            if (draggedTile && !e.target.closest('.drop-zone') && e.target.id !== 'tiles-container' && e.target.closest('#tiles-container') === null) {
-                // Check if the tile was in a slot before being dropped outside
+            if (!draggedTile) return;
+
+            // If dropped outside the drop-slots AND outside the tiles-container, return it to the pool
+            if (!e.target.closest('.drop-zone') && !e.target.closest('#tiles-container')) {
+                
+                // If it came from a slot, clear that slot's value
                 const parentSlot = draggedTile.parentNode;
                 if (parentSlot && parentSlot.classList.contains('drop-zone')) {
                     const slotIndex = Array.from(slotsContainer.children).indexOf(parentSlot);
                     placedTiles[slotIndex] = null;
                 }
 
-                // Append it back to the tiles container
                 tilesContainer.appendChild(draggedTile);
                 draggedTile.classList.remove('opacity-40');
                 
                 updateCheckButtonState();
             }
-        });
-
-        // Add event listener to the main button (Next Word is now Skip Word)
-        document.getElementById('next-button').addEventListener('click', () => {
-             // Record as incorrect/skipped before advancing
-            totalIncorrect++;
-            roundResults.push({
-                word: currentWordData.word,
-                status: "skipped",
-                attempts: 0,
-                finalRack: []
-            });
-            loadNextWord();
-        });
-
-        // --- Initialization ---
-        window.onload = function() {
-            initializeAudio(); 
-            setupGame();
-        };
+        }, false);
 
     </script>
 </body>
