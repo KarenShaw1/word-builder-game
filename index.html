@@ -84,6 +84,15 @@
             max-width: 90%;
             min-height: 80vh;
         }
+
+        /* Style for the results breakdown */
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
     </style>
 </head>
 <body class="bg-indigo-50 min-h-screen flex justify-center items-center p-4">
@@ -100,9 +109,25 @@
                 Drag the sounds to spell the word (NZ Year 2 Phonics)
             </p>
         </header>
+        
+        <!-- Score and Attempts Tracker -->
+        <div id="status-bar" class="w-full flex justify-between items-center mb-6 p-3 bg-indigo-100 rounded-lg shadow-md">
+            <div class="text-center">
+                <span id="current-round-text" class="text-lg font-bold text-indigo-800"></span>
+            </div>
+            <div class="text-center">
+                <p class="text-sm text-gray-600">Correct / Total</p>
+                <span class="text-xl font-bold text-green-700"><span id="correct-words-count">0</span> / <span id="total-words-count">0</span></span>
+            </div>
+            <div class="text-center">
+                <p class="text-sm text-gray-600">Tries Left</p>
+                <span id="attempts-left-display" class="text-xl font-bold text-red-600">3</span>
+            </div>
+        </div>
 
-        <!-- Picture & Slots Area -->
-        <main class="w-full flex flex-col items-center space-y-6 mb-8">
+
+        <!-- Picture & Slots Area (Game Interface) -->
+        <main id="main-game-area" class="w-full flex flex-col items-center space-y-6 mb-8">
             
             <!-- Picture Area -->
             <div id="word-image-container" class="w-40 h-40 md:w-48 md:h-48 rounded-full shadow-xl border-4 border-indigo-300 overflow-hidden relative mb-4 flex items-center justify-center bg-gray-100">
@@ -123,13 +148,13 @@
                     Check
                 </button>
                 <button id="next-button" onclick="loadNextWord()" disabled class="px-6 py-3 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transition duration-150 disabled:opacity-50">
-                    Next Word
+                    Skip Word
                 </button>
             </div>
         </main>
 
         <!-- Draggable Tiles Area -->
-        <section class="w-full text-center p-4 bg-yellow-100 rounded-xl border-4 border-yellow-400 shadow-md mt-6">
+        <section id="tiles-section" class="w-full text-center p-4 bg-yellow-100 rounded-xl border-4 border-yellow-400 shadow-md mt-6">
             <h2 class="text-2xl font-bold text-yellow-800 mb-4">
                 Available Sounds
             </h2>
@@ -137,6 +162,28 @@
                 <!-- Draggable tiles will be rendered here -->
             </div>
         </section>
+
+        <!-- Final Results Screen (Hidden) -->
+        <div id="results-interface" class="hidden w-full text-center">
+             <h2 id="final-message" class="text-4xl font-extrabold mb-4 text-gray-800">Game Over!</h2>
+            
+            <div class="bg-green-50 p-6 rounded-lg mb-8 shadow-lg">
+                <p class="text-2xl text-gray-700 font-semibold mb-2">Final Score:</p>
+                <p class="text-6xl font-extrabold text-gray-800 mt-2">
+                    <span id="results-correct-count" class="text-green-600">0</span> / <span id="results-total-count">0</span>
+                </p>
+                <p class="text-xl font-medium text-gray-600 mt-1">Correct Words</p>
+            </div>
+
+            <h3 class="text-2xl font-semibold mb-4 text-gray-800 border-b pb-2">Round Breakdown</h3>
+            <div id="results-breakdown" class="max-h-96 overflow-y-auto text-left px-4">
+                <!-- Detailed results go here -->
+            </div>
+
+            <button id="restart-button-results" onclick="setupGame()" class="w-full mt-8 py-3 px-6 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 transition duration-300">
+                Play Again
+            </button>
+        </div>
 
     </div>
 
@@ -158,15 +205,19 @@
         }
 
         function playCorrectSound() {
-            // Play a short, cheerful C Major chord (C5, E5, G5)
             const now = Tone.now();
             synth.triggerAttackRelease(["C5", "E5", "G5"], "8n", now);
         }
 
         function playIncorrectSound() {
-            // Play a dissonant, short sound (D3, C#3) - THIS IS THE INCORRECT WORD SOUND
             const now = Tone.now();
             synth.triggerAttackRelease(["D3", "C#3"], "16n", now);
+        }
+        
+        function playFailSound() {
+            // Lower, more somber sound for running out of tries (A2, C3)
+            const now = Tone.now();
+            synth.triggerAttackRelease(["A2", "C3"], "0.3s", now);
         }
 
         // --- Game Data (Sounds are all lowercase) ---
@@ -325,7 +376,6 @@
                 <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
                     <!-- Main cloud body -->
                     <path d="M 20 60 C 20 40, 40 30, 50 30 S 80 40, 80 60 H 20 Z" fill="#93c5fd" stroke="#60a5fa" stroke-width="2"/>
-                    <!-- Rounded edges -->
                     <circle cx="30" cy="50" r="15" fill="#93c5fd" stroke="#60a5fa" stroke-width="2"/>
                     <circle cx="70" cy="50" r="15" fill="#93c5fd" stroke="#60a5fa" stroke-width="2"/>
                 </svg>`,
@@ -333,10 +383,16 @@
 
 
         // --- Game State ---
+        let gameWords = []; // Shuffled list of words for the current game
         let currentWordIndex = 0;
-        let currentWord = {};
+        let currentWordData = {}; // Data for the current word
         let placedTiles = [];
-        let score = 0;
+        
+        let totalCorrect = 0;
+        let totalIncorrect = 0;
+        let attemptsLeft = 3;
+        
+        let roundResults = []; // Stores { word: "...", status: "correct"/"failed", attempts: 1, finalRack: [] }
 
         // --- DOM Elements ---
         const imageContainer = document.getElementById('word-image-container');
@@ -345,6 +401,22 @@
         const feedbackMessage = document.getElementById('feedback-message');
         const checkButton = document.getElementById('check-button');
         const nextButton = document.getElementById('next-button');
+
+        // Status bar elements
+        const currentRoundText = document.getElementById('current-round-text');
+        const correctWordsCount = document.getElementById('correct-words-count');
+        const totalWordsCount = document.getElementById('total-words-count');
+        const attemptsLeftDisplay = document.getElementById('attempts-left-display');
+        
+        // Results elements
+        const mainGameArea = document.getElementById('main-game-area');
+        const tilesSection = document.getElementById('tiles-section');
+        const resultsInterface = document.getElementById('results-interface');
+        const resultsCorrectCount = document.getElementById('results-correct-count');
+        const resultsTotalCount = document.getElementById('results-total-count');
+        const resultsBreakdown = document.getElementById('results-breakdown');
+        const finalMessage = document.getElementById('final-message');
+
 
         // --- Utility Functions ---
 
@@ -357,18 +429,46 @@
             return array;
         };
         
-        // --- Drag and Drop Handlers ---
+        // Resets the style of the drop slots
+        function resetSlotStyles() {
+            Array.from(slotsContainer.children).forEach(slot => {
+                slot.style.borderColor = '';
+                slot.style.backgroundColor = '';
+                slot.classList.add('drop-zone');
+                slot.classList.remove('transition-all');
+            });
+        }
+        
+        // Updates the overall score displayed in the status bar
+        function updateScoreDisplay() {
+            correctWordsCount.textContent = totalCorrect;
+            totalWordsCount.textContent = totalCorrect + totalIncorrect;
+            currentRoundText.textContent = `Word ${currentWordIndex + 1} / ${gameWords.length}`;
+            attemptsLeftDisplay.textContent = attemptsLeft;
+            
+            if (attemptsLeft === 1) {
+                attemptsLeftDisplay.classList.add('text-yellow-600');
+                attemptsLeftDisplay.classList.remove('text-red-600');
+            } else if (attemptsLeft === 0) {
+                attemptsLeftDisplay.classList.add('text-red-600');
+                attemptsLeftDisplay.classList.remove('text-yellow-600');
+            } else {
+                attemptsLeftDisplay.classList.remove('text-yellow-600', 'text-red-600');
+                attemptsLeftDisplay.classList.add('text-red-600');
+            }
+        }
+
+        // --- Drag and Drop Handlers (Kept the same) ---
         
         function handleDragStart(e) {
             e.dataTransfer.setData('text/plain', e.target.dataset.value);
             e.dataTransfer.effectAllowed = 'move';
-            // Store the ID of the tile being dragged so we can manage its visibility/parent
             e.dataTransfer.setData('sourceId', e.target.id);
             setTimeout(() => e.target.classList.add('opacity-40'), 0);
         }
 
         function handleDragOver(e) {
-            e.preventDefault(); // Necessary to allow dropping
+            e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
             if (e.target.classList.contains('drop-zone') && e.target.children.length === 0) {
                 e.target.classList.add('hover');
@@ -389,30 +489,37 @@
             const draggedTile = document.getElementById(sourceId);
             const dropTarget = e.target.closest('.drop-zone');
 
-            if (draggedTile && dropTarget && dropTarget.children.length === 0) {
-                // 1. Remove from old spot (if applicable)
-                if (draggedTile.parentNode.classList.contains('drop-zone')) {
-                     // Find the index of the slot it came from
+            if (!draggedTile) return;
+
+            // 1. Logic for dropping into a slot
+            if (dropTarget && dropTarget.children.length === 0) {
+                // Determine if tile is coming from another slot or the rack
+                const isFromSlot = draggedTile.parentNode.classList.contains('drop-zone');
+                
+                // If it came from a slot, clear that old slot's value
+                if (isFromSlot) {
                     const oldIndex = Array.from(slotsContainer.children).indexOf(draggedTile.parentNode);
                     placedTiles[oldIndex] = null;
                 }
                 
-                // 2. Place tile in new slot
+                // Place tile in new slot
                 dropTarget.appendChild(draggedTile);
                 draggedTile.classList.remove('opacity-40');
                 dropTarget.classList.remove('hover');
 
-                // 3. Update placedTiles array
+                // Update placedTiles array
                 const newIndex = Array.from(slotsContainer.children).indexOf(dropTarget);
                 placedTiles[newIndex] = soundValue;
                 
-                // 4. Update check button state
                 updateCheckButtonState();
 
-            } else if (draggedTile && dropTarget && dropTarget.classList.contains('drop-zone') && dropTarget.children.length > 0) {
-                 // Swap logic 
+            // 2. Logic for swapping tiles between slots
+            } else if (dropTarget && dropTarget.classList.contains('drop-zone') && dropTarget.children.length > 0) {
                  const existingTile = dropTarget.firstElementChild;
                  const oldParent = draggedTile.parentNode;
+                 
+                 // Check if swap is necessary (only swap if dragging from tiles container or another slot)
+                 if (oldParent.id === 'tiles-container' && !existingTile.classList.contains('draggable-tile')) return; // Cannot drag to replace non-tile
                  
                  // Perform the swap
                  oldParent.appendChild(existingTile);
@@ -425,17 +532,19 @@
                  placedTiles[newIndex] = draggedTile.dataset.value;
                  placedTiles[oldIndex] = existingTile.dataset.value;
                  
-            } else if (draggedTile && e.target.id === 'tiles-container') {
-                // Dropping back into the source area
-                e.target.appendChild(draggedTile);
-                draggedTile.classList.remove('opacity-40');
-                
+            // 3. Logic for dropping back into the source area
+            } else if (e.target.id === 'tiles-container' || e.target.closest('#tiles-container')) {
                 // If it came from a slot, clear that slot's value
                 const parentSlot = draggedTile.parentNode;
                 if (parentSlot && parentSlot.classList.contains('drop-zone')) {
                     const slotIndex = Array.from(slotsContainer.children).indexOf(parentSlot);
                     placedTiles[slotIndex] = null;
                 }
+                
+                // Append it back to the tiles container
+                tilesContainer.appendChild(draggedTile);
+                draggedTile.classList.remove('opacity-40');
+                
                 updateCheckButtonState();
             }
         }
@@ -446,38 +555,33 @@
             checkButton.disabled = !allSlotsFilled;
         }
 
-        // --- Render Functions ---
+        // --- Render Functions (Simplified for clarity) ---
 
         function renderImage(data) {
-            // Clear existing content and classes
             imageContainer.innerHTML = '';
-            // Reset the class list to base styles (removing success-pulse)
             imageContainer.className = 'w-40 h-40 md:w-48 md:h-48 rounded-full shadow-xl border-4 border-indigo-300 overflow-hidden relative mb-4 flex items-center justify-center';
             
             const svgContent = wordSVGs[data.word];
 
             if (svgContent) {
-                // Use the custom SVG content
                 imageContainer.innerHTML = svgContent;
-                // Tailwind classes for the background color are included in the wordData as bgColor
-                imageContainer.classList.add(`bg-${data.bgColor}`); 
+                // Add the specific background color
+                const bgClass = `bg-${data.bgColor.replace('-50', '')}-100`; // Use a slightly lighter version for the circle fill
+                imageContainer.classList.add(bgClass); 
             } else {
-                // Fallback image 
                 const url = `https://placehold.co/192x192/94a3b8/000000?text=${data.word}`;
-                imageContainer.innerHTML = `
-                    <img src="${url}" alt="Picture of a ${data.word}" class="w-full h-full object-cover p-2 transition duration-500 ease-in-out" 
-                         onerror="this.onerror=null; this.src='${url}';" />
-                `;
+                imageContainer.innerHTML = `<img src="${url}" alt="Picture of a ${data.word}" class="w-full h-full object-cover p-2" onerror="this.onerror=null; this.src='${url}';" />`;
                 imageContainer.classList.add('bg-gray-100');
             }
         }
 
         function renderDropSlots(data) {
-            slotsContainer.innerHTML = ''; // Clear previous slots
-            placedTiles = Array(data.sounds.length).fill(null); // Reset placed tiles
+            slotsContainer.innerHTML = ''; 
+            placedTiles = Array(data.sounds.length).fill(null); 
             data.sounds.forEach((sound, index) => {
                 const slot = document.createElement('div');
-                slot.className = 'drop-zone empty-box w-20 h-20 md:w-24 md:h-24 bg-white rounded-lg transition duration-150';
+                // Use relative positioning to allow tiles to be placed in the center
+                slot.className = 'drop-zone w-20 h-20 md:w-24 md:h-24 bg-white rounded-lg transition duration-150 relative flex items-center justify-center border-2 border-dashed border-gray-400';
                 slot.dataset.index = index;
                 slot.addEventListener('dragover', handleDragOver);
                 slot.addEventListener('dragleave', handleDragLeave);
@@ -487,36 +591,27 @@
         }
 
         function renderDraggableTiles(data) {
-            tilesContainer.innerHTML = ''; // Clear previous tiles
+            tilesContainer.innerHTML = ''; 
             
             const requiredSounds = Array.from(new Set(data.sounds));
             let availableTiles = requiredSounds.map(sound => ({
                 id: `tile-${sound}-${Math.random().toString(36).substring(2, 9)}`,
-                value: sound,
-                isDistractor: false
+                value: sound
             }));
 
-            // Identify a pool of common distractors (not typically required for these short words)
             const commonDistractors = ["q", "x", "z", "j", "v", "oo", "ea"]; 
-            
-            // Filter distractors that are NOT in the required sounds
             let validDistractors = commonDistractors.filter(s => !requiredSounds.includes(s));
-            
-            // Choose the first 2 available valid distractors (or fewer if less than 2)
             const chosenDistractors = shuffleArray(validDistractors).slice(0, 2);
 
             chosenDistractors.forEach((sound, index) => {
                  availableTiles.push({
                     id: `distractor-tile-${sound}-${index}`,
-                    value: sound,
-                    isDistractor: true
+                    value: sound
                  });
             });
 
-            // Shuffle the tiles before rendering
             availableTiles = shuffleArray(availableTiles);
             
-            // --- UNIFIED COLOR SCHEME ---
             const bgColor = 'bg-blue-100';
             const borderColor = 'border-blue-400';
             const textColor = 'text-blue-800';
@@ -527,96 +622,212 @@
                 tile.dataset.value = tileData.value;
                 tile.draggable = true;
                 
-                // Apply the unified styling to all tiles
                 tile.className = `draggable-tile w-20 h-20 md:w-24 md:h-24 ${bgColor} ${borderColor} ${textColor} text-3xl font-bold flex justify-center items-center rounded-xl shadow-md p-1 transition duration-200 hover:scale-105 active:scale-95 border-2`;
 
                 tile.textContent = tileData.value;
                 tile.addEventListener('dragstart', handleDragStart);
                 tilesContainer.appendChild(tile);
             });
-            tilesContainer.addEventListener('drop', handleDrop);
+            // Re-adding the drop listener to the container itself for returning tiles
+            tilesContainer.addEventListener('drop', handleDrop); 
         }
         
         // --- Game Logic ---
         
-        function loadWord(index) {
-            // Ensure index wraps around if we exceed the array length
-            currentWordIndex = index % wordData.length;
-            currentWord = wordData[currentWordIndex];
+        function setupGame() {
+            // Reset main game state
+            gameWords = shuffleArray([...wordData]);
+            currentWordIndex = 0;
+            totalCorrect = 0;
+            totalIncorrect = 0;
+            roundResults = [];
+
+            // Show game area, hide results
+            mainGameArea.classList.remove('hidden');
+            tilesSection.classList.remove('hidden');
+            resultsInterface.classList.add('hidden');
+            
+            loadWord();
+        }
+
+        function loadWord() {
+            // Check if game is finished
+            if (currentWordIndex >= gameWords.length) {
+                return endGame();
+            }
+
+            currentWordData = gameWords[currentWordIndex];
+            
+            // Reset round state
+            attemptsLeft = 3;
+            resetSlotStyles();
             
             // Reset UI
-            feedbackMessage.textContent = '';
+            feedbackMessage.textContent = 'Drag and drop the sounds into the correct order!';
+            feedbackMessage.className = 'h-10 text-xl font-bold mt-4 text-gray-700';
             nextButton.disabled = true;
             checkButton.disabled = true;
+            imageContainer.classList.remove('success-pulse');
 
             // Render components
-            renderImage(currentWord);
-            renderDropSlots(currentWord);
-            renderDraggableTiles(currentWord);
+            renderImage(currentWordData);
+            renderDropSlots(currentWordData);
+            renderDraggableTiles(currentWordData);
+            updateScoreDisplay(); // Update round number and attempts
         }
 
         function checkWord() {
-            const checkButton = document.getElementById('check-button');
             if (checkButton.disabled) return;
 
-            // Check if placedTiles array matches the target sounds array (both are lowercase now)
-            const isCorrect = currentWord.sounds.every((sound, index) => placedTiles[index] === sound);
-            
-            // Get all drop slots
-            const dropSlots = document.getElementById('drop-slots-container').children;
+            // Collect the word currently in the slots
+            const currentAttempt = placedTiles.filter(t => t !== null);
+            if (currentAttempt.length !== currentWordData.sounds.length) {
+                feedbackMessage.className = 'h-10 text-xl font-bold mt-4 text-orange-600 feedback-incorrect';
+                feedbackMessage.textContent = 'Please fill all the sound slots.';
+                return;
+            }
 
+            const isCorrect = currentWordData.sounds.every((sound, index) => placedTiles[index] === sound);
+            
             if (isCorrect) {
-                // 1. Play success sound
+                // --- CORRECT ATTEMPT ---
                 playCorrectSound();
-                
-                // 2. Add visual pulse effect
                 imageContainer.classList.add('success-pulse');
                 
-                // 3. Success feedback message
                 feedbackMessage.className = 'h-10 text-xl font-bold mt-4 text-green-600 feedback-correct';
-                feedbackMessage.textContent = `Tino pai! You spelled ${currentWord.word.toUpperCase()}!`;
+                feedbackMessage.textContent = `Tino pai! (${currentWordData.word.toUpperCase()})`;
                 
-                // 4. Visually lock tiles in place with success style
-                Array.from(dropSlots).forEach(slot => {
-                    slot.style.borderColor = '#10B981'; // Green-500
-                    slot.style.backgroundColor = '#D1FAE5'; // Green-100
+                // Visually lock tiles in place with success style
+                Array.from(slotsContainer.children).forEach(slot => {
+                    slot.style.borderColor = '#10B981';
+                    slot.style.backgroundColor = '#D1FAE5';
                     slot.classList.remove('drop-zone');
                 });
                 
-                // 5. Disable check button, enable next button
+                // Record result and advance
+                totalCorrect++;
+                roundResults.push({
+                    word: currentWordData.word,
+                    status: "correct",
+                    attempts: 3 - attemptsLeft + 1, // Calculate attempts used
+                    finalRack: currentAttempt
+                });
+
+                // Disable buttons and automatically advance
                 checkButton.disabled = true;
-                nextButton.disabled = false;
+                nextButton.disabled = true;
                 
-                score++;
-
+                setTimeout(loadNextWord, 1500); // Advance after 1.5s
+                
             } else {
-                // Play incorrect sound
-                playIncorrectSound();
+                // --- INCORRECT ATTEMPT ---
+                
+                attemptsLeft--;
+                updateScoreDisplay(); // Update tries left
 
-                // Failure feedback
-                feedbackMessage.className = 'h-10 text-xl font-bold mt-4 text-red-600 feedback-incorrect';
-                feedbackMessage.textContent = 'Oops, try again! Which sound comes first?';
+                if (attemptsLeft === 0) {
+                    // --- FAILED ROUND ---
+                    playFailSound();
+                    
+                    feedbackMessage.className = 'h-10 text-xl font-bold mt-4 text-red-600 feedback-incorrect';
+                    feedbackMessage.textContent = `Out of tries! The word was ${currentWordData.word.toUpperCase()}.`;
+                    
+                    // Record failure
+                    totalIncorrect++;
+                    roundResults.push({
+                        word: currentWordData.word,
+                        status: "failed",
+                        attempts: 3,
+                        finalRack: currentAttempt
+                    });
+
+                    // Disable buttons and automatically advance
+                    checkButton.disabled = true;
+                    nextButton.disabled = true;
+                    setTimeout(loadNextWord, 3000); // Wait longer to show answer
+                } else {
+                    // --- MISTAKE, TRY AGAIN ---
+                    playIncorrectSound();
+                    
+                    feedbackMessage.className = 'h-10 text-xl font-bold mt-4 text-red-600 feedback-incorrect';
+                    feedbackMessage.textContent = `Oops, try again! ${attemptsLeft} tries remaining.`;
+                }
             }
         }
         
         function loadNextWord() {
-            // Ensure the pulse effect is removed before loading the next word
-            imageContainer.classList.remove('success-pulse');
-            loadWord(currentWordIndex + 1);
+            currentWordIndex++;
+            loadWord();
         }
 
-        // --- Initialization ---
-        window.onload = function() {
-            // Must initialize audio context first
-            initializeAudio(); 
-            loadWord(currentWordIndex);
-        };
-        
+        function endGame() {
+            // Hide game area, show results interface
+            mainGameArea.classList.add('hidden');
+            tilesSection.classList.add('hidden');
+            resultsInterface.classList.remove('hidden');
+
+            const totalWords = gameWords.length;
+            const successRate = totalCorrect / totalWords;
+            
+            let messageText;
+            let emoji;
+            let colorClass;
+            
+            // Define threshold (70% or more words correct)
+            if (successRate >= 0.7) {
+                messageText = 'Well done! You nailed the challenge! 🥳';
+                emoji = '🥳';
+                colorClass = 'text-green-600';
+            } else {
+                messageText = 'Keep going! Let’s practice those sounds again. 😔';
+                emoji = '😔';
+                colorClass = 'text-red-600';
+            }
+            
+            // Update the final summary
+            finalMessage.className = `text-4xl font-extrabold mb-4 ${colorClass}`;
+            finalMessage.innerHTML = `${messageText} ${emoji}`;
+            
+            resultsCorrectCount.textContent = totalCorrect;
+            resultsTotalCount.textContent = totalWords;
+
+            // Display detailed breakdown
+            resultsBreakdown.innerHTML = '';
+            roundResults.forEach(item => {
+                const isCorrect = item.status === 'correct';
+                
+                const resultDiv = document.createElement('div');
+                resultDiv.classList.add('result-item', isCorrect ? 'text-green-800' : 'text-red-800');
+
+                // Left side: Word & Status
+                const wordLine = document.createElement('div');
+                wordLine.classList.add('flex', 'flex-col');
+                wordLine.innerHTML = `
+                    <span class="font-bold text-xl">${item.word}</span>
+                    <span class="text-sm ${isCorrect ? 'text-green-600' : 'text-red-600'}">
+                        ${isCorrect ? 'Correct!' : 'Failed.'} (Tries: ${item.attempts})
+                    </span>
+                `;
+                resultDiv.appendChild(wordLine);
+
+                // Right side: Attempted Word
+                const attemptLine = document.createElement('div');
+                attemptLine.classList.add('text-right');
+                
+                const attemptLabel = document.createElement('span');
+                attemptLabel.className = `word-result-label px-3 py-1 rounded-full ${isCorrect ? 'bg-green-500' : 'bg-red-500'}`;
+                attemptLabel.textContent = item.finalRack.join(' ').toUpperCase();
+                
+                resultDiv.appendChild(attemptLabel);
+                resultsBreakdown.appendChild(resultDiv);
+            });
+        }
+
+
         // --- Global Drag Listeners for body/document to handle tile returns ---
         document.addEventListener('dragenter', (e) => e.preventDefault(), false);
         document.addEventListener('dragover', (e) => e.preventDefault(), false);
         document.addEventListener('drop', (e) => {
-            // This handles dropping tiles outside of a valid drop zone, returning them to the pool
             const sourceId = e.dataTransfer.getData('sourceId');
             const draggedTile = document.getElementById(sourceId);
             
@@ -635,6 +846,25 @@
                 updateCheckButtonState();
             }
         });
+
+        // Add event listener to the main button (Next Word is now Skip Word)
+        document.getElementById('next-button').addEventListener('click', () => {
+             // Record as incorrect/skipped before advancing
+            totalIncorrect++;
+            roundResults.push({
+                word: currentWordData.word,
+                status: "skipped",
+                attempts: 0,
+                finalRack: []
+            });
+            loadNextWord();
+        });
+
+        // --- Initialization ---
+        window.onload = function() {
+            initializeAudio(); 
+            setupGame();
+        };
 
     </script>
 </body>
