@@ -95,7 +95,7 @@
         }
     </style>
 </head>
-<body class="bg-indigo-50 min-h-screen flex justify-center items-center p-4">
+<body class="bg-pink-200 min-h-screen flex justify-center items-center p-4">
 
     <!-- Game Container -->
     <div id="game-container" class="game-container bg-white shadow-2xl rounded-2xl p-6 md:p-10 w-full max-w-xl flex flex-col items-center">
@@ -424,7 +424,7 @@
         const shuffleArray = (array) => {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
+                [array[i], array[j]] = array[j], array[i];
             }
             return array;
         };
@@ -665,7 +665,7 @@
             // Reset UI
             feedbackMessage.textContent = 'Drag and drop the sounds into the correct order!';
             feedbackMessage.className = 'h-10 text-xl font-bold mt-4 text-gray-700';
-            nextButton.disabled = true;
+            nextButton.disabled = false; // Next button is enabled to skip the word
             checkButton.disabled = true;
             imageContainer.classList.remove('success-pulse');
 
@@ -731,6 +731,13 @@
                     
                     feedbackMessage.className = 'h-10 text-xl font-bold mt-4 text-red-600 feedback-incorrect';
                     feedbackMessage.textContent = `Out of tries! The word was ${currentWordData.word.toUpperCase()}.`;
+                    
+                    // Visually lock slots with a failure style
+                    Array.from(slotsContainer.children).forEach(slot => {
+                        slot.style.borderColor = '#F87171'; // Red-400
+                        slot.style.backgroundColor = '#FEE2E2'; // Red-100
+                        slot.classList.remove('drop-zone');
+                    });
                     
                     // Record failure
                     totalIncorrect++;
@@ -815,8 +822,8 @@
                 attemptLine.classList.add('text-right');
                 
                 const attemptLabel = document.createElement('span');
-                attemptLabel.className = `word-result-label px-3 py-1 rounded-full ${isCorrect ? 'bg-green-500' : 'bg-red-500'}`;
-                attemptLabel.textContent = item.finalRack.join(' ').toUpperCase();
+                attemptLabel.className = `word-result-label px-3 py-1 rounded-full ${isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
+                attemptLabel.textContent = item.finalRack.length > 0 ? item.finalRack.join(' ').toUpperCase() : 'N/A';
                 
                 resultDiv.appendChild(attemptLabel);
                 resultsBreakdown.appendChild(resultDiv);
