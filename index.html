@@ -30,7 +30,7 @@
             border: 2px dashed #90a4ae;
         }
         .drop-zone.hover {
-            background-color: #ffe0b2; /* Light orange highlight */
+            background-color: #f7e2c9; /* Light amber highlight */
         }
 
         /* --- Success/Failure Visual Effects --- */
@@ -88,11 +88,11 @@
 </head>
 <body class="bg-indigo-50 min-h-screen flex justify-center items-center p-4">
 
-    <!-- Game Container -->
-    <div id="game-container" class="game-container bg-white shadow-2xl rounded-2xl p-6 md:p-10 w-full max-w-xl flex flex-col items-center">
+    <!-- Game Container: Changed to bg-amber-100 for a brighter, warm tone -->
+    <div id="game-container" class="game-container bg-amber-100 shadow-2xl rounded-2xl p-6 md:p-10 w-full max-w-xl flex flex-col items-center">
 
         <!-- Header -->
-        <header class="text-center mb-8 w-full">
+        <header class="text-center mb-6 w-full">
             <h1 class="text-4xl font-extrabold text-indigo-700">
                 Word Builder Challenge!
             </h1>
@@ -100,6 +100,12 @@
                 Drag the sounds to spell the word (NZ Year 2 Phonics)
             </p>
         </header>
+        
+        <!-- Score Counter -->
+        <div id="score-counter" class="w-full flex justify-around text-xl font-bold mt-2 mb-6 p-3 rounded-xl bg-amber-200 shadow-md">
+            <span class="text-green-700">✅ Correct: <span id="correct-count">0</span></span>
+            <span class="text-red-700">❌ Wrong: <span id="incorrect-count">0</span></span>
+        </div>
 
         <!-- Picture & Slots Area -->
         <main class="w-full flex flex-col items-center space-y-6 mb-8">
@@ -110,7 +116,7 @@
             </div>
             
             <!-- Drop Zone Slots -->
-            <div id="drop-slots-container" class="flex justify-center flex-wrap gap-2 md:gap-4 p-2 bg-gray-50 rounded-lg shadow-inner w-full">
+            <div id="drop-slots-container" class="flex justify-center flex-wrap gap-2 md:gap-4 p-2 bg-amber-50 rounded-lg shadow-inner w-full">
                 <!-- Drop zones will be rendered here -->
             </div>
             
@@ -164,7 +170,7 @@
         }
 
         function playIncorrectSound() {
-            // Play a dissonant, short sound (D3, C#3) - THIS IS THE INCORRECT WORD SOUND
+            // Play a dissonant, short sound (D3, C#3)
             const now = Tone.now();
             synth.triggerAttackRelease(["D3", "C#3"], "16n", now);
         }
@@ -190,6 +196,7 @@
         
         // --- SVG Definitions (remain the same, keyed by uppercase word) ---
         const wordSVGs = {
+            // ... (SVG definitions remain unchanged for brevity, as they were not requested to change) ...
             "HAT": `
                 <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
                     <rect x="15" y="70" width="70" height="15" rx="5" fill="#facc15"/>
@@ -325,18 +332,18 @@
                 <svg viewBox="0 0 100 100" class="w-full h-full p-4" xmlns="http://www.w3.org/2000/svg">
                     <!-- Main cloud body -->
                     <path d="M 20 60 C 20 40, 40 30, 50 30 S 80 40, 80 60 H 20 Z" fill="#93c5fd" stroke="#60a5fa" stroke-width="2"/>
-                    <!-- Rounded edges -->
                     <circle cx="30" cy="50" r="15" fill="#93c5fd" stroke="#60a5fa" stroke-width="2"/>
                     <circle cx="70" cy="50" r="15" fill="#93c5fd" stroke="#60a5fa" stroke-width="2"/>
                 </svg>`,
         };
 
 
-        // --- Game State ---
+        // --- Game State & Score Counter ---
         let currentWordIndex = 0;
         let currentWord = {};
         let placedTiles = [];
-        let score = 0;
+        let correctCount = 0; // New state variable
+        let incorrectCount = 0; // New state variable
 
         // --- DOM Elements ---
         const imageContainer = document.getElementById('word-image-container');
@@ -357,18 +364,17 @@
             return array;
         };
         
-        // --- Drag and Drop Handlers ---
+        // --- Drag and Drop Handlers (Unchanged) ---
         
         function handleDragStart(e) {
             e.dataTransfer.setData('text/plain', e.target.dataset.value);
             e.dataTransfer.effectAllowed = 'move';
-            // Store the ID of the tile being dragged so we can manage its visibility/parent
             e.dataTransfer.setData('sourceId', e.target.id);
             setTimeout(() => e.target.classList.add('opacity-40'), 0);
         }
 
         function handleDragOver(e) {
-            e.preventDefault(); // Necessary to allow dropping
+            e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
             if (e.target.classList.contains('drop-zone') && e.target.children.length === 0) {
                 e.target.classList.add('hover');
@@ -392,7 +398,6 @@
             if (draggedTile && dropTarget && dropTarget.children.length === 0) {
                 // 1. Remove from old spot (if applicable)
                 if (draggedTile.parentNode.classList.contains('drop-zone')) {
-                     // Find the index of the slot it came from
                     const oldIndex = Array.from(slotsContainer.children).indexOf(draggedTile.parentNode);
                     placedTiles[oldIndex] = null;
                 }
@@ -446,23 +451,23 @@
             checkButton.disabled = !allSlotsFilled;
         }
 
-        // --- Render Functions ---
+        function updateScoreDisplay() {
+            document.getElementById('correct-count').textContent = correctCount;
+            document.getElementById('incorrect-count').textContent = incorrectCount;
+        }
+
+        // --- Render Functions (renderDraggableTiles modified for 4 distractors) ---
 
         function renderImage(data) {
-            // Clear existing content and classes
             imageContainer.innerHTML = '';
-            // Reset the class list to base styles (removing success-pulse)
             imageContainer.className = 'w-40 h-40 md:w-48 md:h-48 rounded-full shadow-xl border-4 border-indigo-300 overflow-hidden relative mb-4 flex items-center justify-center';
             
             const svgContent = wordSVGs[data.word];
 
             if (svgContent) {
-                // Use the custom SVG content
                 imageContainer.innerHTML = svgContent;
-                // Tailwind classes for the background color are included in the wordData as bgColor
                 imageContainer.classList.add(`bg-${data.bgColor}`); 
             } else {
-                // Fallback image 
                 const url = `https://placehold.co/192x192/94a3b8/000000?text=${data.word}`;
                 imageContainer.innerHTML = `
                     <img src="${url}" alt="Picture of a ${data.word}" class="w-full h-full object-cover p-2 transition duration-500 ease-in-out" 
@@ -473,8 +478,8 @@
         }
 
         function renderDropSlots(data) {
-            slotsContainer.innerHTML = ''; // Clear previous slots
-            placedTiles = Array(data.sounds.length).fill(null); // Reset placed tiles
+            slotsContainer.innerHTML = '';
+            placedTiles = Array(data.sounds.length).fill(null);
             data.sounds.forEach((sound, index) => {
                 const slot = document.createElement('div');
                 slot.className = 'drop-zone empty-box w-20 h-20 md:w-24 md:h-24 bg-white rounded-lg transition duration-150';
@@ -487,7 +492,7 @@
         }
 
         function renderDraggableTiles(data) {
-            tilesContainer.innerHTML = ''; // Clear previous tiles
+            tilesContainer.innerHTML = '';
             
             const requiredSounds = Array.from(new Set(data.sounds));
             let availableTiles = requiredSounds.map(sound => ({
@@ -496,14 +501,14 @@
                 isDistractor: false
             }));
 
-            // Identify a pool of common distractors (not typically required for these short words)
-            const commonDistractors = ["q", "x", "z", "j", "v", "oo", "ea"]; 
+            // Common distractors list
+            const commonDistractors = ["q", "x", "z", "j", "v", "oo", "ea", "ph", "ie", "au", "ei"]; 
             
             // Filter distractors that are NOT in the required sounds
             let validDistractors = commonDistractors.filter(s => !requiredSounds.includes(s));
             
-            // Choose the first 2 available valid distractors (or fewer if less than 2)
-            const chosenDistractors = shuffleArray(validDistractors).slice(0, 2);
+            // INCREASED: Choose the first 4 available valid distractors
+            const chosenDistractors = shuffleArray(validDistractors).slice(0, 4);
 
             chosenDistractors.forEach((sound, index) => {
                  availableTiles.push({
@@ -516,7 +521,7 @@
             // Shuffle the tiles before rendering
             availableTiles = shuffleArray(availableTiles);
             
-            // --- UNIFIED COLOR SCHEME: Indigo to match the app theme ---
+            // UNIFIED COLOR SCHEME: Indigo to match the app theme 
             const bgColor = 'bg-indigo-100';
             const borderColor = 'border-indigo-400';
             const textColor = 'text-indigo-800';
@@ -527,20 +532,19 @@
                 tile.dataset.value = tileData.value;
                 tile.draggable = true;
                 
-                // Applying the identical class list to all tiles
+                // Identical class list for all tiles (required and distractors)
                 tile.className = `draggable-tile w-20 h-20 md:w-24 md:h-24 ${bgColor} ${borderColor} ${textColor} text-3xl font-bold flex justify-center items-center rounded-xl shadow-md p-1 transition duration-200 hover:scale-105 active:scale-95 border-2`;
 
-                tile.textContent = tileData.value.toUpperCase(); // Display uppercase for better visibility
+                tile.textContent = tileData.value.toUpperCase(); 
                 tile.addEventListener('dragstart', handleDragStart);
                 tilesContainer.appendChild(tile);
             });
             tilesContainer.addEventListener('drop', handleDrop);
         }
         
-        // --- Game Logic ---
+        // --- Game Logic (checkWord modified to update score) ---
         
         function loadWord(index) {
-            // Ensure index wraps around if we exceed the array length
             currentWordIndex = index % wordData.length;
             currentWord = wordData[currentWordIndex];
             
@@ -553,82 +557,73 @@
             renderImage(currentWord);
             renderDropSlots(currentWord);
             renderDraggableTiles(currentWord);
+            
+            // Update the score display just in case (though it should be 0 on load)
+            updateScoreDisplay(); 
         }
 
         function checkWord() {
             const checkButton = document.getElementById('check-button');
             if (checkButton.disabled) return;
 
-            // Check if placedTiles array matches the target sounds array (both are lowercase now)
             const isCorrect = currentWord.sounds.every((sound, index) => placedTiles[index] === sound);
-            
-            // Get all drop slots
             const dropSlots = document.getElementById('drop-slots-container').children;
 
             if (isCorrect) {
-                // 1. Play success sound
                 playCorrectSound();
                 
-                // 2. Add visual pulse effect
                 imageContainer.classList.add('success-pulse');
                 
-                // 3. Success feedback message
                 feedbackMessage.className = 'h-10 text-xl font-bold mt-4 text-green-600 feedback-correct';
                 feedbackMessage.textContent = `Tino pai! You spelled ${currentWord.word.toUpperCase()}!`;
                 
-                // 4. Visually lock tiles in place with success style
                 Array.from(dropSlots).forEach(slot => {
                     slot.style.borderColor = '#10B981'; // Green-500
                     slot.style.backgroundColor = '#D1FAE5'; // Green-100
                     slot.classList.remove('drop-zone');
                 });
                 
-                // 5. Disable check button, enable next button
                 checkButton.disabled = true;
                 nextButton.disabled = false;
                 
-                score++;
-
+                correctCount++; // Increment correct count
             } else {
-                // Play incorrect sound
                 playIncorrectSound();
 
-                // Failure feedback
                 feedbackMessage.className = 'h-10 text-xl font-bold mt-4 text-red-600 feedback-incorrect';
                 feedbackMessage.textContent = 'Oops, try again! Which sound comes first?';
+                
+                incorrectCount++; // Increment incorrect count
             }
+            
+            updateScoreDisplay(); // Update the displayed score count
         }
         
         function loadNextWord() {
-            // Ensure the pulse effect is removed before loading the next word
             imageContainer.classList.remove('success-pulse');
             loadWord(currentWordIndex + 1);
         }
 
         // --- Initialization ---
         window.onload = function() {
-            // Must initialize audio context first
             initializeAudio(); 
             loadWord(currentWordIndex);
         };
         
-        // --- Global Drag Listeners for body/document to handle tile returns ---
+        // --- Global Drag Listeners for body/document to handle tile returns (Unchanged) ---
         document.addEventListener('dragenter', (e) => e.preventDefault(), false);
         document.addEventListener('dragover', (e) => e.preventDefault(), false);
         document.addEventListener('drop', (e) => {
-            // This handles dropping tiles outside of a valid drop zone, returning them to the pool
             const sourceId = e.dataTransfer.getData('sourceId');
             const draggedTile = document.getElementById(sourceId);
             
             if (draggedTile && !e.target.closest('.drop-zone') && e.target.id !== 'tiles-container' && e.target.closest('#tiles-container') === null) {
-                // Check if the tile was in a slot before being dropped outside
                 const parentSlot = draggedTile.parentNode;
                 if (parentSlot && parentSlot.classList.contains('drop-zone')) {
                     const slotIndex = Array.from(slotsContainer.children).indexOf(parentSlot);
                     placedTiles[slotIndex] = null;
                 }
 
-                // Append it back to the tiles container
                 tilesContainer.appendChild(draggedTile);
                 draggedTile.classList.remove('opacity-40');
                 
