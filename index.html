@@ -6,6 +6,8 @@
     <title>NZ Year 2 Phonics Game</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Tone.js for sound effects -->
+    <script src="https://unpkg.com/tone@14.8.49/build/Tone.js"></script>
     <style>
         /* Import Comfortaa Font and apply it globally */
         @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap');
@@ -31,7 +33,9 @@
             background-color: #ffe0b2; /* Light orange highlight */
         }
 
-        /* Success/Failure States */
+        /* --- Success/Failure Visual Effects --- */
+        
+        /* General bounce animation for text feedback */
         .feedback-correct {
             animation: bounce-in 0.5s;
         }
@@ -49,6 +53,30 @@
             0%, 100% { transform: translateX(0); }
             20%, 60% { transform: translateX(-5px); }
             40%, 80% { transform: translateX(5px); }
+        }
+        
+        /* Pulse/Glow effect for the image container on correct answer */
+        .success-pulse {
+            /* Uses Emerald Green (Tailwind 500 equivalent) */
+            animation: success-pulse-keyframe 0.6s ease-out forwards; 
+        }
+
+        @keyframes success-pulse-keyframe {
+            0% { 
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); 
+                transform: scale(1); 
+                border-color: #34d399; /* Light green border */
+            } 
+            50% { 
+                box-shadow: 0 0 30px 15px rgba(16, 185, 129, 0.8); 
+                transform: scale(1.05); 
+                border-color: #10b981; /* Darker green border */
+            }
+            100% { 
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); 
+                transform: scale(1); 
+                border-color: #10b981; 
+            }
         }
         
         /* Ensure the layout is responsive and centered */
@@ -113,6 +141,35 @@
     </div>
 
     <script>
+        // --- Tone.js Audio Setup ---
+        // A simple synth for cheerful sound
+        let synth; 
+
+        function initializeAudio() {
+             // Initialize a polyphonic synth for a richer sound
+            synth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "square" },
+                envelope: {
+                    attack: 0.02,
+                    decay: 0.1,
+                    sustain: 0.1,
+                    release: 0.5
+                }
+            }).toDestination();
+        }
+
+        function playCorrectSound() {
+            // Play a short, cheerful C Major chord (C4, E4, G4)
+            const now = Tone.now();
+            synth.triggerAttackRelease(["C5", "E5", "G5"], "8n", now);
+        }
+
+        function playIncorrectSound() {
+            // Play a dissonant, short sound (E4, F#4)
+            const now = Tone.now();
+            synth.triggerAttackRelease(["D3", "C#3"], "16n", now);
+        }
+
         // --- Game Data (Sounds are all lowercase) ---
         const wordData = [
             { word: "HAT", sounds: ["h", "a", "t"], color: "f97316", fontColor: "ffffff", bgColor: "orange-50" }, 
@@ -357,7 +414,7 @@
         function renderImage(data) {
             // Clear existing content and classes
             imageContainer.innerHTML = '';
-            // Reset the class list to base styles
+            // Reset the class list to base styles (removing success-pulse)
             imageContainer.className = 'w-40 h-40 md:w-48 md:h-48 rounded-full shadow-xl border-4 border-indigo-300 overflow-hidden relative mb-4 flex items-center justify-center';
             
             const svgContent = wordSVGs[data.word];
@@ -436,7 +493,7 @@
                     borderColor = 'border-yellow-400';
                     textColor = 'text-yellow-800';
                 } else {
-                    // Required tiles (Emerald Green as requested)
+                    // Required tiles (Emerald Green)
                     bgColor = 'bg-emerald-300';
                     borderColor = 'border-emerald-500';
                     textColor = 'text-gray-800';
@@ -481,38 +538,49 @@
             const dropSlots = document.getElementById('drop-slots-container').children;
 
             if (isCorrect) {
-                // Success feedback
+                // 1. Play success sound
+                playCorrectSound();
+                
+                // 2. Add visual pulse effect
+                imageContainer.classList.add('success-pulse');
+                
+                // 3. Success feedback message
                 feedbackMessage.className = 'h-10 text-xl font-bold mt-4 text-green-600 feedback-correct';
                 feedbackMessage.textContent = `Tino pai! You spelled ${currentWord.word.toUpperCase()}!`;
                 
-                // Visually lock tiles in place with success style
+                // 4. Visually lock tiles in place with success style
                 Array.from(dropSlots).forEach(slot => {
-                    slot.style.borderColor = '#10B981'; // Emerald Green
+                    slot.style.borderColor = '#10B981'; // Green-500
                     slot.style.backgroundColor = '#D1FAE5'; // Green-100
                     slot.classList.remove('drop-zone');
                 });
                 
-                // Disable check button, enable next button
+                // 5. Disable check button, enable next button
                 checkButton.disabled = true;
                 nextButton.disabled = false;
                 
                 score++;
 
             } else {
+                // Play incorrect sound
+                playIncorrectSound();
+
                 // Failure feedback
                 feedbackMessage.className = 'h-10 text-xl font-bold mt-4 text-red-600 feedback-incorrect';
                 feedbackMessage.textContent = 'Oops, try again! Which sound comes first?';
-                
-                // We'll just let them rearrange for now.
             }
         }
         
         function loadNextWord() {
+            // Ensure the pulse effect is removed before loading the next word
+            imageContainer.classList.remove('success-pulse');
             loadWord(currentWordIndex + 1);
         }
 
         // --- Initialization ---
         window.onload = function() {
+            // Must initialize audio context first
+            initializeAudio(); 
             loadWord(currentWordIndex);
         };
         
